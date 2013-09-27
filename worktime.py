@@ -1,7 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
+Requires pynotify (python-notify package in Ubuntu)
 Interface:
-worklog.txt
+~/.mymisc/workstatus.txt
+~/.mymisc/worklog.txt
 - The order of the lines is not guaranteed, so that it can be written straight
   from a dict.
 - It is not required to contain all modes, even if zero. Instead of adding in
@@ -36,14 +38,11 @@ def main():
 or
   $ """+script_name+""" [command] [arguments]
 Where [mode] is a single letter (one of """+', '.join(MODES)+""")
-and [command] is one of the following:
-  clear:
-Clears the log; restarts at 0 for all modes.
-  adjust:
-Add or subtract times from the recorded log.
-Format: "p+20 w-5 n+100"
-  status:
-Show the current times."""
+And [command] is one of the following:
+  clear:  Clears the log; restarts at 0 for all modes.
+  adjust: Add or subtract minutes from the recorded log.
+          Format: "p+20 w-5 n+100"
+  status: Show the current times."""
     sys.exit(0)
   else:
     arg1 = sys.argv[1]
@@ -53,7 +52,6 @@ Show the current times."""
       run_command(arg1, sys.argv[2:])
 
 
-# seems to be working
 def switch_mode(mode):
   """Mark the time spent in the last mode and mark this new one"""
 
@@ -99,11 +97,10 @@ def clear():
   """Clears the log"""
   # don't print 0's. just blank it, and the 0's will be inferred when needed
   writelog(log_file, {})
-  writelog(status_file, {}) # not certain about this one yet
+  writelog(status_file, {})
   notify("Log cleared", "")
 
 
-# seems to be working
 def adjust(adjustments):
   """Change the accumulated times in the work log. Syntax: p+30 w-20"""
 

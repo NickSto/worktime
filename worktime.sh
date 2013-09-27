@@ -1,4 +1,6 @@
 #!/bin/bash
+# Original script
+# Rewrote it in Python once this got too unwieldy
 set -ue
 
 WORK='w'
