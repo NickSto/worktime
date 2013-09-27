@@ -40,7 +40,10 @@ and [command] is one of the following:
   clear:
 Clears the log; restarts at 0 for all modes.
   adjust:
-Add or subtract times from the recorded log."""
+Add or subtract times from the recorded log.
+Format: "p+20 w-5 n+100"
+  status:
+Show the current times."""
     sys.exit(0)
   else:
     arg1 = sys.argv[1]
@@ -71,10 +74,12 @@ def switch_mode(mode):
 
   times[old_mode] = elapsed + times.get(old_mode, 0)
   status = {mode:now}
+  message = mode+"\t(added "+old_mode+"  "+str(datestring(elapsed))+")"
 
   writelog(log_file, times)
   writelog(status_file, status)
-  print_times(mode)
+
+  print_times(message)
 
 
 def run_command(command, args):
@@ -127,7 +132,7 @@ def adjust(adjustments):
 
   writelog(log_file, times)
 
-  print_times()
+  print_times("times adjusted")
 
 
 ##### Basic I/O #####
@@ -160,6 +165,7 @@ def writelog(log_file, times):
 
 
 def status_str():
+  """Read status file, convert into human-readable status string"""
   status = readlog(status_file)
   if status:
     mode = status.keys()[0]
@@ -169,8 +175,9 @@ def status_str():
 
 
 def print_times(message=""):
-  title = ""
-  body = ""
+  """Print state summary to notification system"""
+  title = " "
+  body = " "
   if message:
     title = "Status:\t"+message
   times = readlog(log_file)
