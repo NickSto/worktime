@@ -13,6 +13,7 @@ worklog.txt
 import os
 import sys
 import time
+import pynotify
 
 MODES = ['w','p','n','s']
 HIDDEN = ['s']
@@ -94,7 +95,7 @@ def clear():
   # don't print 0's. just blank it, and the 0's will be inferred when needed
   writelog(log_file, {})
   writelog(status_file, {}) # not certain about this one yet
-  #TODO: print a message to notify-send
+  notify("Log cleared", "")
 
 
 # seems to be working
@@ -168,20 +169,23 @@ def status_str():
 
 
 def print_times(message=""):
+  title = ""
+  body = ""
   if message:
-    print "    "+message
+    title = "Status:\t"+message
   times = readlog(log_file)
   # get union of builtin modes and ones in file (each mode only once)
   modes = list(set(times.keys()) | set(MODES))
   for mode in modes:
     if mode not in HIDDEN:
-      print mode+"\t"+datestring(times.get(mode, 0))
+      body += mode+"\t"+datestring(times.get(mode, 0))+"\n"
+  notify(title, body)
 
-def print_times_real(message=""):
-  times = readlog(log_file)
-  for mode in times:
-    #TODO: print to notify-send
-    print mode+"\t"+str(times[mode])
+
+def notify(title, body):
+  pynotify.init("worktime")
+  notice = pynotify.Notification(title, body)
+  notice.show()
 
 
 def datestring(sec_total):
