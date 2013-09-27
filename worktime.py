@@ -6,6 +6,7 @@ LOG_FILE_REL    = '.mymisc/worklog.txt'
 STATUS_FILE_REL = '.mymisc/workstatus.txt'
 CMD_CLEAR  = 'clear'
 CMD_ADJUST = 'adjust'
+CMD_STATUS = 'status'
 
 log_file    = os.path.expanduser('~')+os.sep+LOG_FILE_REL
 status_file = os.path.expanduser('~')+os.sep+STATUS_FILE_REL
@@ -30,7 +31,7 @@ Add or subtract times from the recorded log."""
     if arg1 in MODES:
       switch_mode(arg1)
     else:
-      run_command(arg1)
+      run_command(arg1, sys.argv[2:])
 
 
 def switch_mode(mode):
@@ -39,15 +40,16 @@ def switch_mode(mode):
   checkfiles(log_file, status_file)
 
 
-def run_command(command):
+def run_command(command, args):
   """Execute a special command"""
   checkfiles(log_file, status_file)
 
   if command == CMD_CLEAR:
     clear()
   elif command == CMD_ADJUST:
-    adjustments = sys.argv[2:]
-    adjust(adjustments)
+    adjust(args)
+  elif command == CMD_STATUS:
+    print_status()
   else:
     fail('Error: Command "'+command+'" not recognized!')
 
@@ -55,6 +57,13 @@ def run_command(command):
 def clear():
   """Clears the log, resetting all times to 0"""
   fail("Oops, this script can't do 'clear' yet!")
+
+
+def print_status():
+  times = readlog(log_file)
+  for mode in times:
+    # TODO: print to notify-send
+    print mode+"\t"+str(times[mode])
 
 
 def adjust(adjustments):
@@ -87,7 +96,7 @@ def readlog(log_file):
   times = {}
   with open(log_file, 'r') as lines:
     for line in lines:
-      [mode, seconds] = line.rstrip("\r\n").split("\t")
+      (mode, seconds) = line.rstrip("\r\n").split("\t")
       times[mode] = int(seconds)
   return times
 
