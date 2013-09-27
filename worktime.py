@@ -74,7 +74,7 @@ def switch_mode(mode):
 
   times[old_mode] = elapsed + times.get(old_mode, 0)
   status = {mode:now}
-  message = mode+"\t(added "+old_mode+"  "+str(datestring(elapsed))+")"
+  message = mode+"\t( added  "+old_mode+"  "+str(timestring(elapsed))+" )"
 
   writelog(log_file, times)
   writelog(status_file, status)
@@ -108,31 +108,35 @@ def adjust(adjustments):
   """Change the accumulated times in the work log. Syntax: p+30 w-20"""
 
   times = readlog(log_file)
+  report = ""
 
-  for adjustment in adjustments:
+  for adj in adjustments:
 
-    if '+' in adjustment:
-      index = adjustment.index("+")
-    elif '-' in adjustment:
-      index = adjustment.index("-")
+    if '+' in adj:
+      index = adj.index("+")
+    elif '-' in adj:
+      index = adj.index("-")
     else:
-      fail("Error: adjustment syntax incorrect in "+adjustment)
+      fail("Error: adjustment syntax incorrect in "+adj)
 
-    mode = adjustment[:index]
+    mode = adj[:index]
     try:
-      amount = int(adjustment[index:])
+      amount = int(adj[index:])
     except ValueError, e:
-      fail("Error: adjustment syntax incorrect in "+adjustment)
+      fail("Error: adjustment syntax incorrect in "+adj)
     if mode not in MODES:
-      fail("Error: invalid mode given in adjustment command "+adjustment)
+      fail("Error: invalid mode given in adjustment command "+adj)
 
     times[mode] = times.get(mode, 0) + 60 * amount
     if times[mode] < 0:
       times[mode] = 0
 
+    print amount
+    report += "\t"+mode+" "+adj[index]+" "+timestring(abs(amount*60))
+
   writelog(log_file, times)
 
-  print_times("times adjusted")
+  print_times(report)
 
 
 ##### Basic I/O #####
@@ -170,7 +174,7 @@ def status_str():
   if status:
     mode = status.keys()[0]
     elapsed = int(time.time()) - status[mode]
-    return mode+"\t"+datestring(elapsed)
+    return mode+"\t"+timestring(elapsed)
   return ""
 
 
@@ -185,7 +189,7 @@ def print_times(message=""):
   modes = list(set(times.keys()) | set(MODES))
   for mode in modes:
     if mode not in HIDDEN:
-      body += mode+"\t"+datestring(times.get(mode, 0))+"\n"
+      body += mode+"\t"+timestring(times.get(mode, 0))+"\n"
   notify(title, body)
 
 
@@ -195,7 +199,7 @@ def notify(title, body):
   notice.show()
 
 
-def datestring(sec_total):
+def timestring(sec_total):
   """Convert time in seconds to HH:MM:SS string"""
   min_total = sec_total / 60
   hrs = min_total / 60
