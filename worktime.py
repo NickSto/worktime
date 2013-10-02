@@ -13,6 +13,7 @@ Interface:
     one)
 """
 import os
+import re
 import sys
 import time
 import pynotify
@@ -89,6 +90,8 @@ def run_command(command, args):
     adjust(args)
   elif command == CMD_STATUS:
     print_times(status_str())
+  elif re.match(r'^\w+[+-]\d+$', command):  # 1st argument = adjustment command
+    adjust([command] + args)
   else:
     fail('Error: Command "'+command+'" not recognized!')
 
@@ -128,7 +131,6 @@ def adjust(adjustments):
     if times[mode] < 0:
       times[mode] = 0
 
-    print amount
     report += "\t"+mode+" "+adj[index]+" "+timestring(abs(amount*60))
 
   writelog(log_file, times)
