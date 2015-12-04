@@ -2,8 +2,8 @@
 """
 Requires pynotify (python-notify package in Ubuntu)
 Interface:
-~/.mymisc/workstatus.txt
-~/.mymisc/worklog.txt
+~/.local/share/nbsdata/workstatus.txt
+~/.local/share/nbsdata/worklog.txt
 - The order of the lines is not guaranteed, so that it can be written straight
   from a dict.
 - It is not required to contain all modes, even if zero. Instead of adding in
@@ -20,14 +20,16 @@ import pynotify
 
 MODES = ['w','p','n','s']
 HIDDEN = ['s']
-LOG_FILE_REL    = '.mymisc/worklog.txt'
-STATUS_FILE_REL = '.mymisc/workstatus.txt'
-CMD_CLEAR  = 'clear'
-CMD_ADJUST = 'adjust'
-CMD_STATUS = 'status'
+DATA_DIR    = '.local/share/nbsdata'
+LOG_FILE    = 'worklog.txt'
+STATUS_FILE = 'workstatus.txt'
+CMD_CLEAR   = 'clear'
+CMD_ADJUST  = 'adjust'
+CMD_STATUS  = 'status'
 
-log_file    = os.path.expanduser('~')+os.sep+LOG_FILE_REL
-status_file = os.path.expanduser('~')+os.sep+STATUS_FILE_REL
+home_dir    = os.path.expanduser('~')
+log_file    = os.path.join(home_dir, DATA_DIR, LOG_FILE)
+status_file = os.path.join(home_dir, DATA_DIR, STATUS_FILE)
 
 
 def main():
@@ -43,7 +45,11 @@ And [command] is one of the following:
   clear:  Clears the log; restarts at 0 for all modes.
   adjust: Add or subtract minutes from the recorded log.
           Format: "p+20 w-5 n+100"
-  status: Show the current times."""
+  status: Show the current times.
+Keeps track of the current status (mode and start time) in:
+"""+status_file+"""
+Keeps track of cumulative totals (in seconds) in:
+"""+log_file
     sys.exit(0)
   else:
     arg1 = sys.argv[1]

@@ -11,10 +11,10 @@ CMND='0'
 CLEAR_CMND='clear'
 STATUS_CMND='status'
 ADJUST_CMND='adjust'
-STATUS_FILE='/home/me/.mymisc/workstatus.txt'
-LOG_FILE='/home/me/.mymisc/worklog.txt'
-LOG_TEMP='/home/me/.mymisc/worktemp.txt'
-NOTIFY_TEMP='/home/me/.mymisc/notifytemp.txt'
+STATUS_FILE="$HOME/.local/share/nbsdata/workstatus.txt"
+LOG_FILE="$HOME/.local/share/nbsdata/worklog.txt"
+LOG_TEMP="$HOME/.local/share/nbsdata/worktemp.txt"
+NOTIFY_TEMP="$HOME/.local/share/nbsdata/notifytemp.txt"
 
 if [[ ! "$@" ]]; then
   echo "USAGE:
