@@ -174,14 +174,23 @@ def writelog(log_file, times):
       log_fh.write(mode+"\t"+str(times.get(mode, 0))+"\n")
 
 
-def status_str():
-  """Read status file, convert into human-readable status string"""
+def readstatus(status_file):
   status = readlog(status_file)
   if status:
     mode = status.keys()[0]
     elapsed = int(time.time()) - status[mode]
-    return mode+"\t"+timestring(elapsed)
-  return ""
+    return mode, elapsed
+  else:
+    return None, None
+
+
+def status_str():
+  """Read status file, convert into human-readable status string"""
+  mode, elapsed = readstatus(status_file)
+  if mode:
+    return '{}\t{}'.format(mode, timestring(elapsed))
+  else:
+    return ''
 
 
 def print_times(message="", ratio=('p','w')):
@@ -190,12 +199,17 @@ def print_times(message="", ratio=('p','w')):
   body = ''
   if message:
     title = "Status:\t"+message
+  current_mode, current_time = readstatus(status_file)
   times = readlog(log_file)
+  for mode in times:
+    if mode == current_mode:
+      times[mode] += current_time
   # get union of builtin modes and ones in file (each mode only once)
   modes = list(set(times.keys()) | set(MODES))
   for mode in modes:
     if mode not in HIDDEN:
       body += '{}\t{}\n'.format(mode, timestring(times.get(mode, 0)))
+  # If requested, calculate the ratio of the times for the specified modes.
   if ratio and times.get(ratio[0]) and times.get(ratio[1]):
     ratio_value = times[ratio[0]] / times[ratio[1]]
     body += '{}/{}:\t{:0.2f}'.format(ratio[0], ratio[1], ratio_value)
