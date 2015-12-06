@@ -12,6 +12,7 @@ Interface:
   - Also applies to the 's' mode special consideration (just don't print that
     one)
 """
+from __future__ import division
 import os
 import re
 import sys
@@ -128,7 +129,7 @@ def adjust(adjustments):
     mode = adj[:index]
     try:
       amount = int(adj[index:])
-    except ValueError, e:
+    except ValueError:
       fail("Error: adjustment syntax incorrect in "+adj)
     if mode not in MODES:
       fail("Error: invalid mode given in adjustment command "+adj)
@@ -183,10 +184,10 @@ def status_str():
   return ""
 
 
-def print_times(message=""):
+def print_times(message="", ratio=('p','w')):
   """Print state summary to notification system"""
-  title = " "
-  body = " "
+  title = ''
+  body = ''
   if message:
     title = "Status:\t"+message
   times = readlog(log_file)
@@ -194,7 +195,14 @@ def print_times(message=""):
   modes = list(set(times.keys()) | set(MODES))
   for mode in modes:
     if mode not in HIDDEN:
-      body += mode+"\t"+timestring(times.get(mode, 0))+"\n"
+      body += '{}\t{}\n'.format(mode, timestring(times.get(mode, 0)))
+  if ratio and times.get(ratio[0]) and times.get(ratio[1]):
+    ratio_value = times[ratio[0]] / times[ratio[1]]
+    body += '{}/{}:\t{:0.2f}'.format(ratio[0], ratio[1], ratio_value)
+  if not title:
+    title = ' '
+  if not body:
+    body = ' '
   notify(title, body)
 
 
@@ -206,8 +214,8 @@ def notify(title, body):
 
 def timestring(sec_total):
   """Convert time in seconds to HH:MM:SS string"""
-  min_total = sec_total / 60
-  hrs = min_total / 60
+  min_total = sec_total // 60
+  hrs = min_total // 60
   min = min_total % 60
   if hrs:
     return "%d:%02d" % (hrs, min)
