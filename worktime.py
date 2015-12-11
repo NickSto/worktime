@@ -80,7 +80,11 @@ def switch_mode(mode):
 
   times[old_mode] = elapsed + times.get(old_mode, 0)
   status = {mode:now}
-  message = mode+"\t( added  "+old_mode+"  "+str(timestring(elapsed))+" )"
+  if old_mode in HIDDEN:
+    desc = 'last'
+  else:
+    desc = 'added'
+  message = '{}\t( {}:  {}  {} )'.format(mode, desc, old_mode, timestring(elapsed))
 
   writelog(log_file, times)
   writelog(status_file, status)
