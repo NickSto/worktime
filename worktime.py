@@ -5,6 +5,10 @@ import os
 import pathlib
 import sys
 import time
+try:
+  from .models import Status, Elapsed
+except ImportError:
+  Status = Elapsed = None
 assert sys.version_info.major >= 3, 'Python 3 required'
 
 MODES = ['w','p','n','s']
@@ -361,12 +365,48 @@ class WorkTimes(object):
     except OSError as error:
       raise WorkTimeError(error)
 
+  # Database interfaces.
 
-def writelog(log_file, times):
-  """Replace existing log file with new version (works for status file too)"""
-  with log_file.open(mode='w') as log_file:
-    for mode in times:
-      log_file.write('{}\t{}\n'.format(mode, times.get(mode, 0)))
+  def _clear_elapsed_database(self):
+    Elapsed.objects.all().delete()
+
+  def _get_raw_status_database(self):
+    statuses = Status.objects.all()
+    assert len(statuses) <= 1, statuses
+    if statuses:
+      status = statuses[0]
+      return status.mode, status.start
+    else:
+      return None, None
+
+  def _set_status_database(self, mode):
+    Status.objects.all().delete()
+    if mode is not None:
+      now = int(time.time())
+      status = Status(mode=mode, start=now)
+      status.save()
+
+  def _get_elapsed_database(self, mode):
+    try:
+      elapsed = Elapsed.objects.get(mode=mode)
+    except Elapsed.DoesNotExist:
+      return 0
+    return elapsed.elapsed
+
+  def _set_elapsed_database(self, mode, elapsed_time):
+    try:
+      elapsed = Elapsed.objects.get(mode=mode)
+      elapsed.delete()
+    except Elapsed.DoesNotExist:
+      pass
+    elapsed = Elapsed(mode=mode, elapsed=elapsed_time)
+    elapsed.save()
+
+  def _get_all_elapsed_database(self):
+    data = {}
+    for elapsed in Elapsed.objects.all():
+      data[elapsed.mode] = elapsed.elapsed
+    return data
 
 
 class WorkTimeError(Exception):
