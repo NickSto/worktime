@@ -1,0 +1,19 @@
+
+#adjust {
+  border: 1px solid #ddd;
+  padding-left: 14px;
+  padding-right: 8px;
+}
+
+#adjust input[name="delta"] {
+  width: 3em;
+}
+
+#adjust input[name="mode"] {
+  width: 2em;
+}
+
+#adjust button[name="action"] {
+  margin-top: 11px;
+  margin-left: 8px;
+}
