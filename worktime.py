@@ -50,7 +50,7 @@ def main(argv):
     else:
       message = '(added {} to {})'.format(timestring(old_elapsed), old_mode)
       print('Setting message to {!r}'.format(message))
-    title, body = make_report(work_times, message)
+    title, body = make_report(work_times.get_summary(), message)
     feedback(title, body, stdout=True, notify=True)
   else:
     command = sys.argv[1]
@@ -63,7 +63,7 @@ def main(argv):
         fail('Error: "adjust" command requires arguments.')
       adjust(work_times, adjustments)
     elif command == 'status':
-      title, body = make_report(work_times)
+      title, body = make_report(work_times.get_summary())
       feedback(title, body, stdout=True, notify=True)
     else:
       fail('Error: Invalid command {!r}.'.format(command))
@@ -102,33 +102,22 @@ def parse_adjustment(adjustment):
   return mode, delta*60
 
 
-def make_report(work_times, message=None, ratio=('p', 'w')):
+def make_report(summary, message=None):
   # Get the current status and how long it's been happening.
-  current_mode, elapsed = work_times.get_status()
-  title = 'Status: {} '.format(current_mode)
+  title = 'Status: {} '.format(summary['current_mode'])
   if message is None:
-    if elapsed is not None:
-      title += timestring(elapsed)
+    if summary['current_elapsed'] is not None:
+      title += summary['current_elapsed']
   else:
     title += message
-  # Get all the elapsed times and add the time of the current mode to them.
-  all_elapsed = work_times.get_all_elapsed()
-  if current_mode:
-    all_elapsed[current_mode] = elapsed + all_elapsed.get(current_mode, 0)
   # Format a list of all the current elapsed times.
   lines = []
-  all_modes = MODES[:]
-  for mode in all_elapsed.keys():
-    if mode not in all_modes:
-      all_modes.append(mode)
-  for mode in all_modes:
-    if mode in all_elapsed and mode not in HIDDEN:
-      lines.append('{}:\t{}'.format(mode, timestring(all_elapsed[mode])))
+  for elapsed in summary['elapsed']:
+    lines.append('{mode}:\t{time}'.format(**elapsed))
   body = '\n'.join(lines)
   # If requested, calculate the ratio of the times for the specified modes.
-  if ratio and ratio[0] in all_elapsed and ratio[1] in all_elapsed:
-    ratio_value = all_elapsed[ratio[0]] / all_elapsed[ratio[1]]
-    body += '\n{}/{}:\t{:0.2f}'.format(ratio[0], ratio[1], ratio_value)
+  if summary['ratio'] is not None:
+    body += '\n{ratio_str}:\t{ratio}'.format(**summary)
   return title, body
 
 
@@ -200,6 +189,40 @@ class WorkTimes(object):
   def add_elapsed(self, mode, delta):
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
+
+  def get_summary(self, ratio=('p', 'w')):
+    summary = {}
+    # Get the current status and how long it's been happening.
+    current_mode, elapsed = self.get_status()
+    summary['current_mode'] = current_mode
+    if elapsed is None:
+      summary['current_elapsed'] = None
+    else:
+      summary['current_elapsed'] = timestring(elapsed)
+    # Get all the elapsed times and add the time of the current mode to them.
+    all_elapsed = self.get_all_elapsed()
+    if current_mode:
+      all_elapsed[current_mode] = elapsed + all_elapsed.get(current_mode, 0)
+    # Format a list of all the current elapsed times.
+    lines = []
+    all_modes = MODES[:]
+    for mode in all_elapsed.keys():
+      if mode not in all_modes:
+        all_modes.append(mode)
+    summary['elapsed'] = []
+    for mode in all_modes:
+      if mode in all_elapsed and mode not in HIDDEN:
+        summary['elapsed'].append({'mode':mode, 'time':timestring(all_elapsed[mode])})
+    # If requested, calculate the ratio of the times for the specified modes.
+    if ratio and ratio[0] in all_elapsed and ratio[1] in all_elapsed:
+      summary['ratio_str'] = '{}/{}'.format(ratio[0], ratio[1])
+      if all_elapsed[ratio[1]] == 0:
+        summary['ratio'] = '∞'
+      else:
+        summary['ratio'] = '{:0.2f}'.format(all_elapsed[ratio[0]] / all_elapsed[ratio[1]])
+    else:
+      summary['ratio_str'] = summary['ratio'] = None
+    return summary
 
   def get_status(self):
     """Return (mode, elapsed): the current mode string, and the number of seconds we've been in it."""
