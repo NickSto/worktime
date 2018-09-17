@@ -23,12 +23,12 @@ STATUS_PATH  = DATA_DIR / 'workstatus.txt'
 API_ENDPOINT = 'https://nstoler.com/worktime'
 TIMEOUT = 5
 
-USAGE = """Usage:
-  $ {0} [mode]
+USAGE = """
+  $ %(prog)s [options] [mode]
 or
-  $ {0} [command] [arguments]""".format(sys.argv[0])
+  $ %(prog)s [options] [command] [arguments]"""
 
-HELP = """
+DESCRIPTION = """
 [mode] is a single letter (one of {})
 [command] is one of the following:
   clear:  Clears the log; restarts at 0 for all modes.
@@ -36,39 +36,59 @@ HELP = """
           Give any number of arguments in the format [mode][+-][minutes]
           E.g. "p+20", "w-5", "n+100"
   status: Show the current times.
+[options] is one of the optional arguments listed below.""".format(', '.join(MODES))
 
-Note: This requires the notify2 package.""".format(', '.join(MODES))
+EPILOG = 'Note: This requires the notify2 package.'
+
+
+def make_argparser():
+  parser = argparse.ArgumentParser(usage=USAGE, description=DESCRIPTION, epilog=EPILOG,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+  parser.add_argument('arguments', nargs='+', help=argparse.SUPPRESS)
+  parser.add_argument('-w', '--web', action='store_true',
+    help='Use the website ({}) as the history log instead of local files.'.format(API_ENDPOINT))
+  parser.add_argument('-l', '--log', type=argparse.FileType('w'), default=sys.stderr,
+    help='Print log messages to this file instead of to stderr. Warning: Will overwrite the file.')
+  volume = parser.add_mutually_exclusive_group()
+  volume.add_argument('-q', '--quiet', dest='volume', action='store_const', const=logging.CRITICAL,
+    default=logging.WARNING)
+  volume.add_argument('-v', '--verbose', dest='volume', action='store_const', const=logging.INFO)
+  volume.add_argument('-D', '--debug', dest='volume', action='store_const', const=logging.DEBUG)
+  return parser
 
 
 def main(argv):
 
-  logging.basicConfig(stream=sys.stderr, format='%(message)s')
+  parser = make_argparser()
+  args = parser.parse_args(argv[1:])
 
-  if '-h' in sys.argv or '--help' in sys.argv or len(sys.argv) <= 1:
-    print(USAGE, file=sys.stderr)
-    print(HELP, file=sys.stderr)
-    return 1
+  logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
-  work_times = WorkTimes(data_store='files', modes=MODES, hidden=HIDDEN,
+  if args.web:
+    data_store = 'web'
+  else:
+    data_store = 'files'
+
+  work_times = WorkTimes(data_store=data_store, modes=MODES, hidden=HIDDEN,
+                         api_endpoint=API_ENDPOINT, timeout=TIMEOUT,
                          log_path=LOG_PATH, status_path=STATUS_PATH)
 
-  if sys.argv[1] in MODES:
-    new_mode = sys.argv[1]
+  if args.arguments[0] in MODES:
+    new_mode = args.arguments[0]
     old_mode, old_elapsed = work_times.switch_mode(new_mode)
     if old_mode is None or old_mode in HIDDEN or old_mode == new_mode:
       message = '(was {})'.format(old_mode)
     else:
       message = '(added {} to {})'.format(timestring(old_elapsed), old_mode)
-      print('Setting message to {!r}'.format(message))
     title, body = make_report(work_times.get_summary(), message)
     feedback(title, body, stdout=True, notify=True)
   else:
-    command = sys.argv[1]
+    command = args.arguments[0]
     if command == 'clear':
       work_times.clear()
       feedback('Log cleared', stdout=True, notify=True)
     elif command == 'adjust':
-      adjustments = sys.argv[2:]
+      adjustments = args.arguments[1:]
       if len(adjustments) == 0:
         fail('Error: "adjust" command requires arguments.')
       adjust(work_times, adjustments)
