@@ -163,6 +163,8 @@ def timestring(sec_total):
 
 
 def untimestring(time_str):
+  if time_str is None:
+    return None
   fields = time_str.split(':')
   if len(fields) == 1:
     minutes = int(fields[0])
