@@ -45,6 +45,10 @@ def make_argparser():
   parser = argparse.ArgumentParser(usage=USAGE, description=DESCRIPTION, epilog=EPILOG,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('arguments', nargs='+', help=argparse.SUPPRESS)
+  parser.add_argument('-n', '--notify', action='store_true',
+    help='Report feedback to desktop notifications.')
+  parser.add_argument('-O', '--no-stdout', dest='stdout', action='store_false', default=True,
+    help='Don\'t print feedback to stdout.')
   parser.add_argument('-w', '--web', action='store_true',
     help='Use the website ({}) as the history log instead of local files.'.format(API_ENDPOINT))
   parser.add_argument('-l', '--log', type=argparse.FileType('w'), default=sys.stderr,
@@ -81,20 +85,21 @@ def main(argv):
     else:
       message = '(added {} to {})'.format(timestring(old_elapsed), old_mode)
     title, body = make_report(work_times.get_summary(), message)
-    feedback(title, body, stdout=True, notify=True)
+    feedback(title, body, stdout=args.stdout, notify=args.notify)
   else:
     command = args.arguments[0]
     if command == 'clear':
       work_times.clear()
-      feedback('Log cleared', stdout=True, notify=True)
+      feedback('Log cleared', stdout=args.stdout, notify=args.notify)
     elif command == 'adjust':
       adjustments = args.arguments[1:]
       if len(adjustments) == 0:
         fail('Error: "adjust" command requires arguments.')
-      adjust(work_times, adjustments)
+      title, body = adjust(work_times, adjustments)
+      feedback(title, body, stdout=args.stdout, notify=args.notify)
     elif command == 'status':
       title, body = make_report(work_times.get_summary())
-      feedback(title, body, stdout=True, notify=True)
+      feedback(title, body, stdout=args.stdout, notify=args.notify)
     else:
       fail('Error: Invalid command {!r}.'.format(command))
 
@@ -109,7 +114,7 @@ def adjust(work_times, adjustments):
     else:
       change_str = 'subtracted from'
     messages.append('{} {} {}\t'.format(timestring(abs(delta)), change_str, mode))
-  feedback('Times adjusted', '\n'.join(messages), stdout=True, notify=True)
+  return 'Times adjusted', '\n'.join(messages)
 
 
 def parse_adjustment(adjustment):
