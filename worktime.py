@@ -6,16 +6,22 @@ import pathlib
 import sys
 import time
 try:
+  import requests
+except ImportError:
+  requests = None
+try:
   from .models import Status, Elapsed
 except ImportError:
   Status = Elapsed = None
 assert sys.version_info.major >= 3, 'Python 3 required'
 
-MODES = ['w','p','n','s']
+MODES  = ['w','p','n','s']
 HIDDEN = ['s']
-DATA_DIR    = pathlib.Path('~/.local/share/nbsdata').expanduser()
-LOG_PATH    = DATA_DIR / 'worklog.txt'
-STATUS_PATH = DATA_DIR / 'workstatus.txt'
+DATA_DIR     = pathlib.Path('~/.local/share/nbsdata').expanduser()
+LOG_PATH     = DATA_DIR / 'worklog.txt'
+STATUS_PATH  = DATA_DIR / 'workstatus.txt'
+API_ENDPOINT = 'https://nstoler.com/worktime'
+TIMEOUT = 5
 
 USAGE = """Usage:
   $ {0} [mode]
@@ -136,6 +142,17 @@ def timestring(sec_total):
     return str(minutes)
 
 
+def untimestring(time_str):
+  fields = time_str.split(':')
+  if len(fields) == 1:
+    minutes = int(fields[0])
+    hours = 0
+  elif len(fields) == 2:
+    minutes = int(fields[1])
+    hours = int(fields[0])
+  return minutes*60 + hours*60*60
+
+
 def feedback(title, body='', stdout=True, notify=False):
   if stdout:
     if title:
@@ -155,11 +172,14 @@ def feedback(title, body='', stdout=True, notify=False):
 class WorkTimes(object):
 
   def __init__(self, data_store='files', modes=MODES, hidden=HIDDEN,
-               log_path=LOG_PATH, status_path=STATUS_PATH):
+               log_path=LOG_PATH, status_path=STATUS_PATH,
+               api_endpoint=API_ENDPOINT, timeout=TIMEOUT):
     self.data_store = data_store
     self.modes = modes
     self.hidden = hidden
     self._log = None
+    self.api_endpoint = api_endpoint
+    self.timeout = timeout
     if isinstance(log_path, pathlib.Path):
       self.log_path = log_path
     else:
@@ -176,8 +196,12 @@ class WorkTimes(object):
       self._clear_elapsed_files()
     elif self.data_store == 'database':
       self._clear_elapsed_database()
+    elif self.data_store == 'web':
+      self._clear_web()
 
   def switch_mode(self, new_mode):
+    if self.data_store == 'web':
+      return self._switch_mode_web(new_mode)
     old_mode, old_elapsed = self.get_status()
     if old_mode is not None and old_mode not in self.hidden:
       # Save the elapsed time we spent in the old mode.
@@ -191,10 +215,14 @@ class WorkTimes(object):
     return old_mode, old_elapsed
 
   def add_elapsed(self, mode, delta):
+    if self.data_store == 'web':
+      return self._add_elapsed_web(mode, delta)
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
 
   def get_summary(self, ratio=('p', 'w')):
+    if self.data_store == 'web':
+      return self._get_summary_web()
     summary = {}
     # Get the current status and how long it's been happening.
     current_mode, elapsed = self.get_status()
@@ -234,11 +262,15 @@ class WorkTimes(object):
       mode, start = self._get_raw_status_files()
     elif self.data_store == 'database':
       mode, start = self._get_raw_status_database()
+    elif self.data_store == 'web':
+      mode, elapsed = self._get_status_web()
     if mode is not None and mode not in self.modes:
       raise WorkTimeError('Current mode {!r} is not one of the valid modes {}.'
                           .format(mode, self.modes))
     if mode is None:
       return None, None
+    elif self.data_store == 'web':
+      return mode, elapsed
     else:
       now = int(time.time())
       return mode, now - start
@@ -277,6 +309,8 @@ class WorkTimes(object):
       return self._log
     elif self.data_store == 'database':
       return self._get_all_elapsed_database()
+    elif self.data_store == 'web':
+      return self._get_all_elapsed_web()
 
   # Files interfaces.
 
@@ -408,6 +442,67 @@ class WorkTimes(object):
       data[elapsed.mode] = elapsed.elapsed
     return data
 
+  # Web interface
+
+  #TODO: Finish implementing rest of the methods.
+
+  def _clear_web(self):
+    make_request(self.api_endpoint+'/clear', method='post', timeout=self.timeout)
+
+  def _get_status_web(self):
+    summary = self._get_summary_web()
+    return summary['current_mode'], summary['current_elapsed']
+
+  def _get_all_elapsed_web(self):
+    summary = self._get_summary_web()
+    all_elapsed = {}
+    for elapsed in summary['elapsed']:
+      all_elapsed[elapsed['mode']] = untimestring(elapsed['time'])
+    return all_elapsed
+
+  def _switch_mode_web(self, new_mode):
+    if new_mode not in self.modes:
+      raise WorkTimeError('Cannot switch mode to {!r}: Not in list of valid modes {}'
+                          .format(new_mode, self.modes))
+    # Get the old status.
+    old_mode, old_elapsed = self._get_status_web()
+    # Make the switch.
+    params = {'mode':new_mode}
+    make_request(self.api_endpoint+'/switch', method='post', data=params, timeout=self.timeout)
+    return old_mode, untimestring(old_elapsed)
+
+  def _add_elapsed_web(self, mode, delta):
+    if mode not in self.modes:
+      raise WorkTimeError('Cannot adjust mode {!r}: Not in list of valid modes {}'
+                          .format(new_mode, self.modes))
+    params = {'mode':mode, 'delta':delta//60}
+    make_request(self.api_endpoint+'/adjust', method='post', data=params, timeout=self.timeout)
+
+  def _get_summary_web(self):
+    summary = {'elapsed':[], 'ratio':None, 'ratio_str':None}
+    response_text = make_request(self.api_endpoint+'?format=plain', timeout=self.timeout)
+    for line in response_text.splitlines():
+      fields = line.split()
+      if len(fields) != 3:
+        raise WorkTimeError('Invalid format in response line: {!r}'.format(line))
+      if fields[0] == 'status':
+        if fields[1] == 'None':
+          summary['current_mode'] = None
+        else:
+          summary['current_mode'] = fields[1]
+        if fields[2] == 'None':
+          summary['current_elapsed'] = None
+        else:
+          summary['current_elapsed'] = fields[2]
+      elif fields[0] == 'total':
+        summary['elapsed'].append({'mode':fields[1], 'time':fields[2]})
+      elif fields[0] == 'ratio':
+        summary['ratio_str'] = fields[1]
+        summary['ratio'] = fields[2]
+    if 'current_mode' not in summary or 'current_elapsed' not in summary:
+      raise WorkTimeError('Invalid summary response. No status found.')
+    return summary
+
 
 class WorkTimeError(Exception):
   def __init__(self, data):
@@ -422,6 +517,20 @@ class WorkTimeError(Exception):
     return self.message
   def __repr__(self):
     return '{}({})'.format(type(self).__name__, repr(self.data))
+
+
+def make_request(url, method='get', **kwargs):
+  try:
+    if method == 'get':
+      response = requests.get(url, **kwargs)
+    elif method == 'post':
+      response = requests.post(url, **kwargs)
+  except requests.exceptions.RequestException as error:
+    raise WorkTimeError(error)
+  if response.status_code != 200:
+    raise WorkTimeError('Error making request: response code {} ({}).'
+                        .format(response.status_code, response.reason))
+  return response.text
 
 
 def fail(message):
