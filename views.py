@@ -1,6 +1,7 @@
 import logging
+from django.conf import settings
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
-from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from .worktime import WorkTimes, timestring
 from utils import QueryParams, boolish
@@ -10,10 +11,22 @@ log = logging.getLogger(__name__)
 ##### Views #####
 
 def main(request):
+  params = QueryParams()
+  params.add('format', choices=('html', 'plain'), default='html')
+  params.parse(request.GET)
   work_times = WorkTimes(data_store='database')
   summary = work_times.get_summary()
   summary['modes'] = work_times.modes
-  return render(request, 'worktime/main.tmpl', summary)
+  if params['format'] == 'html':
+    return render(request, 'worktime/main.tmpl', summary)
+  elif params['format'] == 'plain':
+    lines = []
+    lines.append('status\t{current_mode}\t{current_elapsed}'.format(**summary))
+    for elapsed in summary['elapsed']:
+      lines.append('total\t{mode}\t{time}'.format(**elapsed))
+    if summary['ratio'] is not None:
+      lines.append('ratio\t{ratio_str}\t{ratio}'.format(**summary))
+    return HttpResponse('\n'.join(lines), content_type=settings.PLAINTEXT)
 
 @csrf_exempt
 def switch(request):
