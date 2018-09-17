@@ -70,11 +70,11 @@ def main(argv):
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
   if args.web:
-    data_store = 'web'
+    backend = 'web'
   else:
-    data_store = 'files'
+    backend = 'files'
 
-  work_times = WorkTimes(data_store=data_store, modes=MODES, hidden=HIDDEN,
+  work_times = WorkTimes(backend=backend, modes=MODES, hidden=HIDDEN,
                          api_endpoint=API_ENDPOINT, timeout=TIMEOUT,
                          log_path=LOG_PATH, status_path=STATUS_PATH)
 
@@ -199,10 +199,10 @@ def feedback(title, body='', stdout=True, notify=False):
 
 class WorkTimes(object):
 
-  def __init__(self, data_store='files', modes=MODES, hidden=HIDDEN,
+  def __init__(self, backend='files', modes=MODES, hidden=HIDDEN,
                log_path=LOG_PATH, status_path=STATUS_PATH,
                api_endpoint=API_ENDPOINT, timeout=TIMEOUT):
-    self.data_store = data_store
+    self.backend = backend
     self.modes = modes
     self.hidden = hidden
     self._log = None
@@ -220,15 +220,15 @@ class WorkTimes(object):
   def clear(self):
     """Erase all history and the current status."""
     self.set_status()
-    if self.data_store == 'files':
+    if self.backend == 'files':
       self._clear_elapsed_files()
-    elif self.data_store == 'database':
+    elif self.backend == 'database':
       self._clear_elapsed_database()
-    elif self.data_store == 'web':
+    elif self.backend == 'web':
       self._clear_web()
 
   def switch_mode(self, new_mode):
-    if self.data_store == 'web':
+    if self.backend == 'web':
       return self._switch_mode_web(new_mode)
     old_mode, old_elapsed = self.get_status()
     if old_mode is not None and old_mode not in self.hidden:
@@ -243,13 +243,13 @@ class WorkTimes(object):
     return old_mode, old_elapsed
 
   def add_elapsed(self, mode, delta):
-    if self.data_store == 'web':
+    if self.backend == 'web':
       return self._add_elapsed_web(mode, delta)
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
 
   def get_summary(self, ratio=('p', 'w')):
-    if self.data_store == 'web':
+    if self.backend == 'web':
       return self._get_summary_web()
     summary = {}
     # Get the current status and how long it's been happening.
@@ -286,18 +286,18 @@ class WorkTimes(object):
 
   def get_status(self):
     """Return (mode, elapsed): the current mode string, and the number of seconds we've been in it."""
-    if self.data_store == 'files':
+    if self.backend == 'files':
       mode, start = self._get_raw_status_files()
-    elif self.data_store == 'database':
+    elif self.backend == 'database':
       mode, start = self._get_raw_status_database()
-    elif self.data_store == 'web':
+    elif self.backend == 'web':
       mode, elapsed = self._get_status_web()
     if mode is not None and mode not in self.modes:
       raise WorkTimeError('Current mode {!r} is not one of the valid modes {}.'
                           .format(mode, self.modes))
     if mode is None:
       return None, None
-    elif self.data_store == 'web':
+    elif self.backend == 'web':
       return mode, elapsed
     else:
       now = int(time.time())
@@ -307,37 +307,37 @@ class WorkTimes(object):
     if mode is not None and mode not in self.modes:
       raise WorkTimeError('Cannot set mode {!r}: not one of valid modes {}'
                           .format(mode, self.modes))
-    if self.data_store == 'files':
+    if self.backend == 'files':
       self._set_status_files(mode)
-    elif self.data_store == 'database':
+    elif self.backend == 'database':
       self._set_status_database(mode)
 
   def get_elapsed(self, mode):
     if mode not in self.modes:
       raise WorkTimeError('Cannot get elapsed for mode {!r}: not one of valid modes {}'
                           .format(mode, self.modes))
-    if self.data_store == 'files':
+    if self.backend == 'files':
       return self._get_elapsed_files(mode)
-    elif self.data_store == 'database':
+    elif self.backend == 'database':
       return self._get_elapsed_database(mode)
 
   def set_elapsed(self, mode, elapsed):
     if mode not in self.modes:
       raise WorkTimeError('Cannot set elapsed for mode {!r}: not one of valid modes {}'
                           .format(mode, self.modes))
-    if self.data_store == 'files':
+    if self.backend == 'files':
       self._set_elapsed_files(mode, elapsed)
-    elif self.data_store == 'database':
+    elif self.backend == 'database':
       self._set_elapsed_database(mode, elapsed)
 
   def get_all_elapsed(self):
-    if self.data_store == 'files':
+    if self.backend == 'files':
       if self._log is None:
         self._log = self._read_log()
       return self._log
-    elif self.data_store == 'database':
+    elif self.backend == 'database':
       return self._get_all_elapsed_database()
-    elif self.data_store == 'web':
+    elif self.backend == 'web':
       return self._get_all_elapsed_web()
 
   # Files interfaces.

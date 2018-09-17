@@ -14,7 +14,7 @@ def main(request):
   params = QueryParams()
   params.add('format', choices=('html', 'plain'), default='html')
   params.parse(request.GET)
-  work_times = WorkTimes(data_store='database')
+  work_times = WorkTimes(backend='database')
   summary = work_times.get_summary()
   summary['modes'] = work_times.modes
   if params['format'] == 'html':
@@ -33,7 +33,7 @@ def switch(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times = WorkTimes(data_store='database')
+  work_times = WorkTimes(backend='database')
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
   params.parse(request.POST)
@@ -48,7 +48,7 @@ def adjust(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times = WorkTimes(data_store='database')
+  work_times = WorkTimes(backend='database')
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
   params.add('delta', type=int)
@@ -64,6 +64,6 @@ def clear(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times = WorkTimes(data_store='database')
+  work_times = WorkTimes(backend='database')
   work_times.clear()
   return HttpResponseRedirect(reverse('worktime_main'))
