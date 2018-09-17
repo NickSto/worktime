@@ -30,15 +30,17 @@
               Inactive
             </p>
           {% endif %}
-          <h4>Totals</h4>
-          <div>
-            {% for elapsed_line in elapsed %}
-              <p>{{ elapsed_line.mode }}: {{ elapsed_line.time }}</p>
-            {% endfor %}
-            {% if ratio %}
-              {{ ratio_str }}: {{ ratio }}
-            {% endif %}
-          </div>
+          {% if elapsed %}
+            <h4>Totals</h4>
+            <div>
+              {% for elapsed_line in elapsed %}
+                <p>{{ elapsed_line.mode }}: {{ elapsed_line.time }}</p>
+              {% endfor %}
+              {% if ratio %}
+                {{ ratio_str }}: {{ ratio }}
+              {% endif %}
+            </div>
+          {% endif %}
           <h4>Actions</h4>
             <form id="switch" class="list-group-item action-buttons" name='switch' method='post' action="{% url 'worktime:switch' %}">
               {% csrf_token %}

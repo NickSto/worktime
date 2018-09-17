@@ -2,6 +2,7 @@ import logging
 from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
 from .worktime import WorkTimes, timestring
+from utils import QueryParams, boolish
 log = logging.getLogger(__name__)
 
 
@@ -14,33 +15,38 @@ def main(request):
   return render(request, 'worktime/main.tmpl', summary)
 
 def switch(request):
-  mode = request.POST.get('mode')
+  if request.method != 'POST':
+    log.warning('Wrong method.')
+    return HttpResponseRedirect(reverse('worktime_main'))
   work_times = WorkTimes(data_store='database')
-  if mode is None or mode not in work_times.modes:
-    log.warning('Invalid or missing mode {!r}.'.format(mode))
-    return HttpResponseRedirect(reverse('worktime:main'))
-  old_mode, old_elapsed = work_times.switch_mode(mode)
-  return HttpResponseRedirect(reverse('worktime:main'))
+  params = QueryParams()
+  params.add('mode', choices=work_times.modes)
+  params.parse(request.POST)
+  if params.invalid_value:
+    log.warning('Invalid or missing mode {!r}.'.format(params.get('mode')))
+    return HttpResponseRedirect(reverse('worktime_main'))
+  old_mode, old_elapsed = work_times.switch_mode(params['mode'])
+  return HttpResponseRedirect(reverse('worktime_main'))
 
 def adjust(request):
-  mode = request.POST.get('mode')
-  delta_str = request.POST.get('delta')
-  if not (mode and delta_str):
-    log.warning('Invalid mode ({!r}) and/or delta ({!r}).'.format(mode, delta_str))
-    return HttpResponseRedirect(reverse('worktime:main'))
-  try:
-    delta = 60*int(delta_str)
-  except ValueError:
-    log.warning('Invalid delta {!r}.'.format(mode, delta_str))
-    return HttpResponseRedirect(reverse('worktime:main'))
+  if request.method != 'POST':
+    log.warning('Wrong method.')
+    return HttpResponseRedirect(reverse('worktime_main'))
   work_times = WorkTimes(data_store='database')
-  work_times.add_elapsed(mode, delta)
-  return HttpResponseRedirect(reverse('worktime:main'))
+  params = QueryParams()
+  params.add('mode', choices=work_times.modes)
+  params.add('delta', type=int)
+  params.parse(request.POST)
+  if not (params['mode'] and params['delta']) or params.invalid_value:
+    log.warning('Invalid mode ({!r}) and/or delta ({!r}).'.format(mode, delta_str))
+    return HttpResponseRedirect(reverse('worktime_main'))
+  work_times.add_elapsed(params['mode'], params['delta']*60)
+  return HttpResponseRedirect(reverse('worktime_main'))
 
 def clear(request):
-  if not getattr(request, 'POST', None):
+  if request.method != 'POST':
     log.warning('Wrong method.')
-    return HttpResponseRedirect(reverse('worktime:main'))
+    return HttpResponseRedirect(reverse('worktime_main'))
   work_times = WorkTimes(data_store='database')
   work_times.clear()
-  return HttpResponseRedirect(reverse('worktime:main'))
+  return HttpResponseRedirect(reverse('worktime_main'))
