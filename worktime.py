@@ -22,6 +22,7 @@ LOG_PATH     = DATA_DIR / 'worklog.txt'
 STATUS_PATH  = DATA_DIR / 'workstatus.txt'
 API_ENDPOINT = 'https://nstoler.com/worktime'
 TIMEOUT = 5
+USER_AGENT = 'worktime/0.1'
 
 USAGE = """
   $ %(prog)s [options] [mode]
@@ -547,6 +548,10 @@ class WorkTimeError(Exception):
 
 
 def make_request(url, method='get', **kwargs):
+  if 'headers' in kwargs:
+    kwargs['headers']['User-Agent'] = USER_AGENT
+  else:
+    kwargs['headers'] = {'User-Agent':USER_AGENT}
   try:
     if method == 'get':
       response = requests.get(url, **kwargs)
