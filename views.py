@@ -1,6 +1,7 @@
 import logging
 from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
+from django.views.decorators.csrf import csrf_exempt
 from .worktime import WorkTimes, timestring
 from utils import QueryParams, boolish
 log = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ def main(request):
   summary['modes'] = work_times.modes
   return render(request, 'worktime/main.tmpl', summary)
 
+@csrf_exempt
 def switch(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
@@ -28,6 +30,7 @@ def switch(request):
   old_mode, old_elapsed = work_times.switch_mode(params['mode'])
   return HttpResponseRedirect(reverse('worktime_main'))
 
+@csrf_exempt
 def adjust(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
@@ -43,6 +46,7 @@ def adjust(request):
   work_times.add_elapsed(params['mode'], params['delta']*60)
   return HttpResponseRedirect(reverse('worktime_main'))
 
+@csrf_exempt
 def clear(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
