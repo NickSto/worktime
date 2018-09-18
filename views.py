@@ -54,7 +54,7 @@ def adjust(request):
   params.add('add', type=int)
   params.add('subtract', type=int)
   params.parse(request.POST)
-  if (params.invalid_value or not params['mode']
+  if (not params['mode']
       or (params['add'] is None and params['subtract'] is None)
       or (params['add'] is not None and params['add'] < 0)
       or (params['subtract'] is not None and params['subtract'] < 0)
@@ -65,6 +65,7 @@ def adjust(request):
     delta = params['add']
   elif params['subtract'] is not None:
     delta = -params['subtract']
+  log.info('Adding {!r} to {!r}'.format(delta, params['mode']))
   work_times.add_elapsed(params['mode'], delta*60)
   return HttpResponseRedirect(reverse('worktime_main'))
 

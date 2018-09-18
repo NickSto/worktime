@@ -552,8 +552,6 @@ class WorkTimes(object):
       if method == 'get':
         response = requests.get(self.api_endpoint+url_end, **kwargs)
       elif method == 'post':
-        print('Posting to {}:'.format(self.api_endpoint+url_end))
-        print('  Params: {data}'.format(**kwargs))
         response = requests.post(self.api_endpoint+url_end, **kwargs)
     except requests.exceptions.RequestException as error:
       raise WorkTimeError(error)
