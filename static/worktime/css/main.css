@@ -1,19 +1,63 @@
 
-#adjust {
+#totals td {
+  width: 4em;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+#totals td.value {
+  text-align: right;
+}
+
+#actions form {
   border: 1px solid #ddd;
-  padding-left: 14px;
-  padding-right: 8px;
 }
 
-#adjust input[name="delta"] {
-  width: 3em;
+#adjust {
+  height: 200px;
 }
 
-#adjust input[name="mode"] {
-  width: 2em;
+#adjust_delta, #adjust_mode {
+  padding-top: 15px;
+  padding-left: 10px;
 }
 
-#adjust button[name="action"] {
-  margin-top: 11px;
-  margin-left: 8px;
+#adjust_delta p {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+#adjust_delta .verb {
+  width: 4.3em;
+  display: inline-block;
+  text-align: right;
+}
+
+#adjust_delta input {
+  width: 2.8em;
+  margin-left: 2px;
+  margin-right: 2px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#adjust_delta .preposition {
+  width: 2.2em;
+  display: inline-block;
+  text-align: center;
+}
+
+#adjust_mode button {
+  display: block;
+  margin-right: 10px;
+}
+
+form#clear {
+  border-top: none;
+  margin: 0;
+  text-align: center;
+}
+
+#clear button {
+  margin: 15px;
 }

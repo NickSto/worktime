@@ -51,12 +51,21 @@ def adjust(request):
   work_times = WorkTimes(backend='database')
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
-  params.add('delta', type=int)
+  params.add('add', type=int)
+  params.add('subtract', type=int)
   params.parse(request.POST)
-  if not (params['mode'] and params['delta']) or params.invalid_value:
-    log.warning('Invalid mode ({!r}) and/or delta ({!r}).'.format(mode, delta_str))
+  if (params.invalid_value or not params['mode']
+      or (params['add'] is None and params['subtract'] is None)
+      or (params['add'] is not None and params['add'] < 0)
+      or (params['subtract'] is not None and params['subtract'] < 0)
+  ):
+    log.warning('Invalid mode ({mode!r}), add ({add!r}), or subtract ({subtract!r}).'.format(**params))
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times.add_elapsed(params['mode'], params['delta']*60)
+  if params['add'] is not None:
+    delta = params['add']
+  elif params['subtract'] is not None:
+    delta = -params['subtract']
+  work_times.add_elapsed(params['mode'], delta*60)
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @csrf_exempt

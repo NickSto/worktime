@@ -509,7 +509,11 @@ class WorkTimes(object):
     if mode not in self.modes:
       raise WorkTimeError('Cannot adjust mode {!r}: Not in list of valid modes {}'
                           .format(new_mode, self.modes))
-    params = {'mode':mode, 'delta':delta//60}
+    params = {'mode':mode}
+    if delta < 0:
+      params['subtract'] = abs(delta)//60
+    else:
+      params['add'] = delta//60
     self._make_request('/adjust', method='post', data=params, timeout=self.timeout)
 
   def _get_summary_web(self):
