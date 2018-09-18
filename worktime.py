@@ -52,6 +52,11 @@ def make_argparser():
     help='Don\'t print feedback to stdout.')
   parser.add_argument('-w', '--web', action='store_true',
     help='Use the website ({}) as the history log instead of local files.'.format(API_ENDPOINT))
+  parser.add_argument('-u', '--url', default=API_ENDPOINT,
+    help='An alternative url to use as the website API endpoint. Implies --web.')
+  parser.add_argument('-k', '--skip-cert-verification', dest='verify', action='store_false',
+    default=True,
+    help='Don\'t verify the website TLS certificate.')
   parser.add_argument('-l', '--log', type=argparse.FileType('w'), default=sys.stderr,
     help='Print log messages to this file instead of to stderr. Warning: Will overwrite the file.')
   volume = parser.add_mutually_exclusive_group()
@@ -69,13 +74,13 @@ def main(argv):
 
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
-  if args.web:
+  if args.web or args.url:
     backend = 'web'
   else:
     backend = 'files'
 
   work_times = WorkTimes(backend=backend, modes=MODES, hidden=HIDDEN,
-                         api_endpoint=API_ENDPOINT, timeout=TIMEOUT,
+                         api_endpoint=args.url, timeout=TIMEOUT, verify=args.verify,
                          log_path=LOG_PATH, status_path=STATUS_PATH)
 
   if args.arguments[0] in MODES:
@@ -201,13 +206,14 @@ class WorkTimes(object):
 
   def __init__(self, backend='files', modes=MODES, hidden=HIDDEN,
                log_path=LOG_PATH, status_path=STATUS_PATH,
-               api_endpoint=API_ENDPOINT, timeout=TIMEOUT):
+               api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True):
     self.backend = backend
     self.modes = modes
     self.hidden = hidden
     self._log = None
     self.api_endpoint = api_endpoint
     self.timeout = timeout
+    self.verify = verify
     if isinstance(log_path, pathlib.Path):
       self.log_path = log_path
     else:
@@ -475,7 +481,7 @@ class WorkTimes(object):
   #TODO: Finish implementing rest of the methods.
 
   def _clear_web(self):
-    make_request(self.api_endpoint+'/clear', method='post', timeout=self.timeout)
+    self._make_request('/clear', method='post', timeout=self.timeout)
 
   def _get_status_web(self):
     summary = self._get_summary_web()
@@ -496,7 +502,7 @@ class WorkTimes(object):
     old_mode, old_elapsed = self._get_status_web()
     # Make the switch.
     params = {'mode':new_mode}
-    make_request(self.api_endpoint+'/switch', method='post', data=params, timeout=self.timeout)
+    self._make_request('/switch', method='post', data=params, timeout=self.timeout)
     return old_mode, untimestring(old_elapsed)
 
   def _add_elapsed_web(self, mode, delta):
@@ -504,11 +510,11 @@ class WorkTimes(object):
       raise WorkTimeError('Cannot adjust mode {!r}: Not in list of valid modes {}'
                           .format(new_mode, self.modes))
     params = {'mode':mode, 'delta':delta//60}
-    make_request(self.api_endpoint+'/adjust', method='post', data=params, timeout=self.timeout)
+    self._make_request('/adjust', method='post', data=params, timeout=self.timeout)
 
   def _get_summary_web(self):
     summary = {'elapsed':[], 'ratio':None, 'ratio_str':None}
-    response_text = make_request(self.api_endpoint+'?format=plain', timeout=self.timeout)
+    response_text = self._make_request('?format=plain', timeout=self.timeout)
     for line in response_text.splitlines():
       fields = line.split()
       if len(fields) != 3:
@@ -531,6 +537,27 @@ class WorkTimes(object):
       raise WorkTimeError('Invalid summary response. No status found.')
     return summary
 
+  def _make_request(self, url_end, method='get', **kwargs):
+    if 'headers' in kwargs:
+      kwargs['headers']['User-Agent'] = USER_AGENT
+    else:
+      kwargs['headers'] = {'User-Agent':USER_AGENT}
+    if not self.verify:
+      kwargs['verify'] = False
+    try:
+      if method == 'get':
+        response = requests.get(self.api_endpoint+url_end, **kwargs)
+      elif method == 'post':
+        print('Posting to {}:'.format(self.api_endpoint+url_end))
+        print('  Params: {data}'.format(**kwargs))
+        response = requests.post(self.api_endpoint+url_end, **kwargs)
+    except requests.exceptions.RequestException as error:
+      raise WorkTimeError(error)
+    if response.status_code != 200:
+      raise WorkTimeError('Error making request: response code {} ({}).'
+                          .format(response.status_code, response.reason))
+    return response.text
+
 
 class WorkTimeError(Exception):
   def __init__(self, data):
@@ -545,24 +572,6 @@ class WorkTimeError(Exception):
     return self.message
   def __repr__(self):
     return '{}({})'.format(type(self).__name__, repr(self.data))
-
-
-def make_request(url, method='get', **kwargs):
-  if 'headers' in kwargs:
-    kwargs['headers']['User-Agent'] = USER_AGENT
-  else:
-    kwargs['headers'] = {'User-Agent':USER_AGENT}
-  try:
-    if method == 'get':
-      response = requests.get(url, **kwargs)
-    elif method == 'post':
-      response = requests.post(url, **kwargs)
-  except requests.exceptions.RequestException as error:
-    raise WorkTimeError(error)
-  if response.status_code != 200:
-    raise WorkTimeError('Error making request: response code {} ({}).'
-                        .format(response.status_code, response.reason))
-  return response.text
 
 
 def fail(message):
