@@ -539,7 +539,7 @@ class WorkTimes(object):
       params['add'] = delta//60
     self._make_request('/adjust', method='post', data=params, timeout=self.timeout)
 
-  def _get_summary_web(self, numbers):
+  def _get_summary_web(self, numbers='values'):
     return self._make_request('?format=json&numbers={}'.format(numbers),
                               format='json', timeout=self.timeout)
 
