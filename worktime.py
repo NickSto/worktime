@@ -317,6 +317,8 @@ class WorkTimes(object):
       self._set_status_files(mode)
     elif self.backend == 'database':
       self._set_status_database(mode)
+    elif self.backend == 'web':
+      raise NotImplementedError
 
   def get_elapsed(self, mode):
     if mode not in self.modes:
@@ -326,6 +328,8 @@ class WorkTimes(object):
       return self._get_elapsed_files(mode)
     elif self.backend == 'database':
       return self._get_elapsed_database(mode)
+    elif self.backend == 'web':
+      raise NotImplementedError
 
   def set_elapsed(self, mode, elapsed):
     if mode not in self.modes:
@@ -335,6 +339,8 @@ class WorkTimes(object):
       self._set_elapsed_files(mode, elapsed)
     elif self.backend == 'database':
       self._set_elapsed_database(mode, elapsed)
+    elif self.backend == 'web':
+      raise NotImplementedError
 
   def get_all_elapsed(self):
     if self.backend == 'files':
