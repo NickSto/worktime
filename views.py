@@ -14,14 +14,15 @@ log = logging.getLogger(__name__)
 def main(request):
   params = QueryParams()
   params.add('format', choices=('html', 'plain', 'json'), default='html')
+  params.add('numbers', choices=('values', 'text'), default='text')
   params.parse(request.GET)
   work_times = WorkTimes(backend='database')
-  summary = work_times.get_summary()
+  summary = work_times.get_summary(numbers=params['numbers'])
   summary['modes'] = work_times.modes
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':
-    return HttpResponse(json.dumps(summary), content_type=settings.PLAINTEXT)
+    return HttpResponse(json.dumps(summary), content_type='application/json')
   elif params['format'] == 'plain':
     lines = []
     lines.append('status\t{current_mode}\t{current_elapsed}'.format(**summary))

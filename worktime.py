@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import logging
 import os
 import pathlib
@@ -74,7 +75,7 @@ def main(argv):
 
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
-  if args.web or args.url:
+  if args.web or args.url != API_ENDPOINT:
     backend = 'web'
   else:
     backend = 'files'
@@ -148,23 +149,29 @@ def make_report(summary, message=None):
   title = 'Status: {} '.format(summary['current_mode'])
   if message is None:
     if summary['current_elapsed'] is not None:
-      title += summary['current_elapsed']
+      title += timestring(summary['current_elapsed'])
   else:
     title += message
   # Format a list of all the current elapsed times.
   lines = []
   for elapsed in summary['elapsed']:
-    lines.append('{mode}:\t{time}'.format(**elapsed))
+    lines.append('{}:\t{}'.format(elapsed['mode'], timestring(elapsed['time'])))
   body = '\n'.join(lines)
   # If requested, calculate the ratio of the times for the specified modes.
   if summary['ratio'] is not None:
-    body += '\n{ratio_str}:\t{ratio}'.format(**summary)
+    if summary['ratio'] == float('inf'):
+      ratio = '∞'
+    else:
+      ratio = '{:0.2f}'.format(summary['ratio'])
+    body += '\n{}:\t{}'.format(summary['ratio_str'], ratio)
   return title, body
 
 
 def timestring(sec_total):
   """Convert time in seconds to HH:MM string"""
-  min_total = sec_total // 60
+  if sec_total is None:
+    return 'None'
+  min_total = round(sec_total / 60)
   hours = min_total // 60
   minutes = min_total % 60
   if hours:
@@ -254,16 +261,17 @@ class WorkTimes(object):
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
 
-  def get_summary(self, ratio=('p', 'w')):
+  def get_summary(self, numbers='values', ratio=('p', 'w')):
     if self.backend == 'web':
-      return self._get_summary_web()
+      return self._get_summary_web(numbers=numbers)
     summary = {}
     # Get the current status and how long it's been happening.
     current_mode, elapsed = self.get_status()
-    summary['current_mode'] = current_mode
-    if elapsed is None:
-      summary['current_elapsed'] = None
-    else:
+    if numbers == 'values':
+      summary['current_mode'] = current_mode
+      summary['current_elapsed'] = elapsed
+    elif numbers == 'text':
+      summary['current_mode'] = str(current_mode)
       summary['current_elapsed'] = timestring(elapsed)
     # Get all the elapsed times and add the time of the current mode to them.
     all_elapsed = self.get_all_elapsed()
@@ -278,14 +286,23 @@ class WorkTimes(object):
     summary['elapsed'] = []
     for mode in all_modes:
       if mode in all_elapsed and mode not in HIDDEN:
-        summary['elapsed'].append({'mode':mode, 'time':timestring(all_elapsed[mode])})
+        if numbers == 'values':
+          elapsed_data = {'mode':mode, 'time':all_elapsed[mode]}
+        elif numbers == 'text':
+          elapsed_data = {'mode':mode, 'time':timestring(all_elapsed[mode])}
+        summary['elapsed'].append(elapsed_data)
     # If requested, calculate the ratio of the times for the specified modes.
     if ratio and ratio[0] in all_elapsed and ratio[1] in all_elapsed:
       summary['ratio_str'] = '{}/{}'.format(ratio[0], ratio[1])
       if all_elapsed[ratio[1]] == 0:
-        summary['ratio'] = '∞'
+        summary['ratio'] = float('inf')
       else:
-        summary['ratio'] = '{:0.2f}'.format(all_elapsed[ratio[0]] / all_elapsed[ratio[1]])
+        summary['ratio'] = all_elapsed[ratio[0]] / all_elapsed[ratio[1]]
+      if numbers == 'text':
+        if summary['ratio'] == float('inf'):
+          summary['ratio'] = '∞'
+        else:
+          summary['ratio'] = '{:0.2f}'.format(summary['ratio'])
     else:
       summary['ratio_str'] = summary['ratio'] = None
     return summary
@@ -497,7 +514,7 @@ class WorkTimes(object):
     summary = self._get_summary_web()
     all_elapsed = {}
     for elapsed in summary['elapsed']:
-      all_elapsed[elapsed['mode']] = untimestring(elapsed['time'])
+      all_elapsed[elapsed['mode']] = elapsed['time']
     return all_elapsed
 
   def _switch_mode_web(self, new_mode):
@@ -509,7 +526,7 @@ class WorkTimes(object):
     # Make the switch.
     params = {'mode':new_mode}
     self._make_request('/switch', method='post', data=params, timeout=self.timeout)
-    return old_mode, untimestring(old_elapsed)
+    return old_mode, old_elapsed
 
   def _add_elapsed_web(self, mode, delta):
     if mode not in self.modes:
@@ -522,32 +539,11 @@ class WorkTimes(object):
       params['add'] = delta//60
     self._make_request('/adjust', method='post', data=params, timeout=self.timeout)
 
-  def _get_summary_web(self):
-    summary = {'elapsed':[], 'ratio':None, 'ratio_str':None}
-    response_text = self._make_request('?format=plain', timeout=self.timeout)
-    for line in response_text.splitlines():
-      fields = line.split()
-      if len(fields) != 3:
-        raise WorkTimeError('Invalid format in response line: {!r}'.format(line))
-      if fields[0] == 'status':
-        if fields[1] == 'None':
-          summary['current_mode'] = None
-        else:
-          summary['current_mode'] = fields[1]
-        if fields[2] == 'None':
-          summary['current_elapsed'] = None
-        else:
-          summary['current_elapsed'] = fields[2]
-      elif fields[0] == 'total':
-        summary['elapsed'].append({'mode':fields[1], 'time':fields[2]})
-      elif fields[0] == 'ratio':
-        summary['ratio_str'] = fields[1]
-        summary['ratio'] = fields[2]
-    if 'current_mode' not in summary or 'current_elapsed' not in summary:
-      raise WorkTimeError('Invalid summary response. No status found.')
-    return summary
+  def _get_summary_web(self, numbers):
+    return self._make_request('?format=json&numbers={}'.format(numbers),
+                              format='json', timeout=self.timeout)
 
-  def _make_request(self, url_end, method='get', **kwargs):
+  def _make_request(self, url_end, method='get', format='text', **kwargs):
     if 'headers' in kwargs:
       kwargs['headers']['User-Agent'] = USER_AGENT
     else:
@@ -564,7 +560,10 @@ class WorkTimes(object):
     if response.status_code != 200:
       raise WorkTimeError('Error making request: response code {} ({}).'
                           .format(response.status_code, response.reason))
-    return response.text
+    if format == 'text':
+      return response.text
+    elif format == 'json':
+      return response.json()
 
 
 class WorkTimeError(Exception):
