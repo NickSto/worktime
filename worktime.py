@@ -76,13 +76,11 @@ def main(argv):
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
   if args.web or args.url != API_ENDPOINT:
-    backend = 'web'
+    work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN,
+                              api_endpoint=args.url, timeout=TIMEOUT, verify=args.verify)
   else:
-    backend = 'files'
-
-  work_times = WorkTimes(backend=backend, modes=MODES, hidden=HIDDEN,
-                         api_endpoint=args.url, timeout=TIMEOUT, verify=args.verify,
-                         log_path=LOG_PATH, status_path=STATUS_PATH)
+    work_times = WorkTimesFiles(modes=MODES, hidden=HIDDEN,
+                                log_path=LOG_PATH, status_path=STATUS_PATH)
 
   if args.arguments[0] in MODES:
     new_mode = args.arguments[0]
@@ -210,39 +208,18 @@ def feedback(title, body='', stdout=True, notify=False):
 
 
 class WorkTimes(object):
+  """The parent class, agnostic to backend data store.
+  Most methods are unimplemented, since they depend on the data source."""
 
-  def __init__(self, backend='files', modes=MODES, hidden=HIDDEN,
-               log_path=LOG_PATH, status_path=STATUS_PATH,
-               api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True):
-    self.backend = backend
+  def __init__(self, modes=MODES, hidden=HIDDEN):
     self.modes = modes
     self.hidden = hidden
-    self._log = None
-    self.api_endpoint = api_endpoint
-    self.timeout = timeout
-    self.verify = verify
-    if isinstance(log_path, pathlib.Path):
-      self.log_path = log_path
-    else:
-      log_path = pathlib.Path(log_path)
-    if isinstance(status_path, pathlib.Path):
-      self.status_path = status_path
-    else:
-      status_path = pathlib.Path(status_path)
 
   def clear(self):
     """Erase all history and the current status."""
-    self.set_status()
-    if self.backend == 'files':
-      self._clear_elapsed_files()
-    elif self.backend == 'database':
-      self._clear_elapsed_database()
-    elif self.backend == 'web':
-      self._clear_web()
+    raise NotImplementedError
 
   def switch_mode(self, new_mode):
-    if self.backend == 'web':
-      return self._switch_mode_web(new_mode)
     old_mode, old_elapsed = self.get_status()
     if old_mode is not None and old_mode not in self.hidden:
       # Save the elapsed time we spent in the old mode.
@@ -256,14 +233,11 @@ class WorkTimes(object):
     return old_mode, old_elapsed
 
   def add_elapsed(self, mode, delta):
-    if self.backend == 'web':
-      return self._add_elapsed_web(mode, delta)
+    """Add `delta` seconds to the elapsed time for `mode`."""
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
 
   def get_summary(self, numbers='values', ratio=('p', 'w')):
-    if self.backend == 'web':
-      return self._get_summary_web(numbers=numbers)
     summary = {}
     # Get the current status and how long it's been happening.
     current_mode, elapsed = self.get_status()
@@ -309,78 +283,52 @@ class WorkTimes(object):
 
   def get_status(self):
     """Return (mode, elapsed): the current mode string, and the number of seconds we've been in it."""
-    if self.backend == 'files':
-      mode, start = self._get_raw_status_files()
-    elif self.backend == 'database':
-      mode, start = self._get_raw_status_database()
-    elif self.backend == 'web':
-      mode, elapsed = self._get_status_web()
-    if mode is not None and mode not in self.modes:
-      raise WorkTimeError('Current mode {!r} is not one of the valid modes {}.'
-                          .format(mode, self.modes))
-    if mode is None:
-      return None, None
-    elif self.backend == 'web':
-      return mode, elapsed
-    else:
-      now = int(time.time())
-      return mode, now - start
+    raise NotImplementedError
 
   def set_status(self, mode=None):
-    if mode is not None and mode not in self.modes:
-      raise WorkTimeError('Cannot set mode {!r}: not one of valid modes {}'
-                          .format(mode, self.modes))
-    if self.backend == 'files':
-      self._set_status_files(mode)
-    elif self.backend == 'database':
-      self._set_status_database(mode)
-    elif self.backend == 'web':
-      raise NotImplementedError
+    """Set the current mode to `mode`, and reset its starting time to now.
+    If no mode is given, erase the current status."""
+    raise NotImplementedError
 
   def get_elapsed(self, mode):
-    if mode not in self.modes:
-      raise WorkTimeError('Cannot get elapsed for mode {!r}: not one of valid modes {}'
-                          .format(mode, self.modes))
-    if self.backend == 'files':
-      return self._get_elapsed_files(mode)
-    elif self.backend == 'database':
-      return self._get_elapsed_database(mode)
-    elif self.backend == 'web':
-      raise NotImplementedError
+    """Get the total number of seconds we've spend in `mode` (NOT including the current period)."""
+    raise NotImplementedError
 
   def set_elapsed(self, mode, elapsed):
-    if mode not in self.modes:
-      raise WorkTimeError('Cannot set elapsed for mode {!r}: not one of valid modes {}'
-                          .format(mode, self.modes))
-    if self.backend == 'files':
-      self._set_elapsed_files(mode, elapsed)
-    elif self.backend == 'database':
-      self._set_elapsed_database(mode, elapsed)
-    elif self.backend == 'web':
-      raise NotImplementedError
+    """Set the total number of seconds we've spent in `mode` to `elapsed`."""
+    raise NotImplementedError
 
   def get_all_elapsed(self):
-    if self.backend == 'files':
-      if self._log is None:
-        self._log = self._read_log()
-      return self._log
-    elif self.backend == 'database':
-      return self._get_all_elapsed_database()
-    elif self.backend == 'web':
-      return self._get_all_elapsed_web()
+    """Get the total number of seconds we've spent in every mode (NOT including the current period).
+    Returns a dict mapping modes to seconds. Only modes we've spent time in will be included."""
+    raise NotImplementedError
 
-  # Files interfaces.
+  def validate_mode(self, mode):
+    """Raise a WorkTimeError if the given `mode` is not one of the canonical modes."""
+    if mode is not None and mode not in self.modes:
+      raise WorkTimeError('Mode {!r} is not one of the valid modes {}.'.format(mode, self.modes))
 
-  def _set_status_files(self, mode):
-    data = {}
-    if mode is not None:
-      start = int(time.time())
-      data[mode] = start
-    self._write_file(data, self.status_path)
 
-  def _get_raw_status_files(self):
-    """Return (mode, start): The current mode string, and the timestamp of when it started
-    (in seconds)."""
+class WorkTimesFiles(WorkTimes):
+
+  def __init__(self, modes=MODES, hidden=HIDDEN, log_path=LOG_PATH, status_path=STATUS_PATH):
+    super().__init__(modes=modes, hidden=hidden)
+    if isinstance(log_path, pathlib.Path):
+      self.log_path = log_path
+    else:
+      log_path = pathlib.Path(log_path)
+    if isinstance(status_path, pathlib.Path):
+      self.status_path = status_path
+    else:
+      status_path = pathlib.Path(status_path)
+    self._log = None
+
+  def clear(self):
+    self._log = None
+    self._write_file({}, self.status_path)
+    self._write_file({}, self.log_path)
+
+  def get_status(self):
     data = self._read_file(self.status_path)
     if not data:
       return None, None
@@ -390,23 +338,36 @@ class WorkTimes(object):
                             .format(str(self.status_path), len(data.keys())))
       mode = list(data.keys())[0]
       start = data[mode]
-      return mode, start
+      self.validate_mode(mode)
+      now = int(time.time())
+      return mode, now - start
 
-  def _get_elapsed_files(self, mode):
+  def set_status(self, mode):
+    self.validate_mode(mode)
+    data = {}
+    if mode is not None:
+      start = int(time.time())
+      data[mode] = start
+    self._write_file(data, self.status_path)
+
+  def get_elapsed(self, mode):
     """Read the log file and get the elapsed time for the given mode."""
+    self.validate_mode(mode)
     if self._log is None:
       self._log = self._read_log()
     return self._log.get(mode, 0)
 
-  def _set_elapsed_files(self, mode, elapsed):
+  def set_elapsed(self, mode, elapsed):
+    self.validate_mode(mode)
     if self._log is None:
       self._log = self._read_log()
     self._log[mode] = elapsed
     self._write_file(self._log, self.log_path)
 
-  def _clear_elapsed_files(self):
-    self._log = None
-    self._write_file({}, self.log_path)
+  def get_all_elapsed(self):
+    if self._log is None:
+      self._log = self._read_log()
+    return self._log
 
   def _read_log(self):
     """Read the elapsed times log file and store the result in the self._log cache.
@@ -456,35 +417,42 @@ class WorkTimes(object):
     except OSError as error:
       raise WorkTimeError(error)
 
-  # Database interfaces.
 
-  def _clear_elapsed_database(self):
+class WorkTimesDatabase(WorkTimes):
+
+  def clear(self):
+    Status.objects.all().delete()
     Elapsed.objects.all().delete()
 
-  def _get_raw_status_database(self):
+  def get_status(self):
     statuses = Status.objects.all()
     assert len(statuses) <= 1, statuses
     if statuses:
       status = statuses[0]
-      return status.mode, status.start
+      self.validate_mode(status.mode)
+      now = int(time.time())
+      return status.mode, now - status.start
     else:
       return None, None
 
-  def _set_status_database(self, mode):
+  def set_status(self, mode):
+    self.validate_mode(mode)
     Status.objects.all().delete()
     if mode is not None:
       now = int(time.time())
       status = Status(mode=mode, start=now)
       status.save()
 
-  def _get_elapsed_database(self, mode):
+  def get_elapsed(self, mode):
+    self.validate_mode(mode)
     try:
       elapsed = Elapsed.objects.get(mode=mode)
     except Elapsed.DoesNotExist:
       return 0
     return elapsed.elapsed
 
-  def _set_elapsed_database(self, mode, elapsed_time):
+  def set_elapsed(self, mode, elapsed_time):
+    self.validate_mode(mode)
     try:
       elapsed = Elapsed.objects.get(mode=mode)
       elapsed.delete()
@@ -493,45 +461,40 @@ class WorkTimes(object):
     elapsed = Elapsed(mode=mode, elapsed=elapsed_time)
     elapsed.save()
 
-  def _get_all_elapsed_database(self):
+  def get_all_elapsed(self):
     data = {}
     for elapsed in Elapsed.objects.all():
       data[elapsed.mode] = elapsed.elapsed
     return data
 
-  # Web interface
+
+class WorkTimesWeb(WorkTimes):
+
+  def __init__(self, modes=MODES, hidden=HIDDEN,
+               api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True):
+    super().__init__(modes=modes, hidden=hidden)
+    self.api_endpoint = api_endpoint
+    self.timeout = timeout
+    self.verify = verify
 
   #TODO: Finish implementing rest of the methods.
 
-  def _clear_web(self):
+  def clear(self):
     self._make_request('/clear', method='post', timeout=self.timeout)
 
-  def _get_status_web(self):
-    summary = self._get_summary_web()
-    return summary['current_mode'], summary['current_elapsed']
-
-  def _get_all_elapsed_web(self):
-    summary = self._get_summary_web()
-    all_elapsed = {}
-    for elapsed in summary['elapsed']:
-      all_elapsed[elapsed['mode']] = elapsed['time']
-    return all_elapsed
-
-  def _switch_mode_web(self, new_mode):
-    if new_mode not in self.modes:
-      raise WorkTimeError('Cannot switch mode to {!r}: Not in list of valid modes {}'
-                          .format(new_mode, self.modes))
+  def switch_mode(self, new_mode):
+    # Override this method in the parent, since it's a special case with web.
+    self.validate_mode(new_mode)
     # Get the old status.
-    old_mode, old_elapsed = self._get_status_web()
+    old_mode, old_elapsed = self.get_status()
     # Make the switch.
     params = {'mode':new_mode}
     self._make_request('/switch', method='post', data=params, timeout=self.timeout)
     return old_mode, old_elapsed
 
-  def _add_elapsed_web(self, mode, delta):
-    if mode not in self.modes:
-      raise WorkTimeError('Cannot adjust mode {!r}: Not in list of valid modes {}'
-                          .format(new_mode, self.modes))
+  def add_elapsed(self, mode, delta):
+    # Override this method in the parent, since it's a special case with web.
+    self.validate_mode(mode)
     params = {'mode':mode}
     if delta < 0:
       params['subtract'] = abs(delta)//60
@@ -539,9 +502,21 @@ class WorkTimes(object):
       params['add'] = delta//60
     self._make_request('/adjust', method='post', data=params, timeout=self.timeout)
 
-  def _get_summary_web(self, numbers='values'):
+  def get_summary(self, numbers='values'):
+    # Override this method in the parent, since it's a special case with web.
     return self._make_request('?format=json&numbers={}'.format(numbers),
                               format='json', timeout=self.timeout)
+
+  def get_status(self):
+    summary = self.get_summary()
+    return summary['current_mode'], summary['current_elapsed']
+
+  def get_all_elapsed(self):
+    summary = self.get_summary()
+    all_elapsed = {}
+    for elapsed in summary['elapsed']:
+      all_elapsed[elapsed['mode']] = elapsed['time']
+    return all_elapsed
 
   def _make_request(self, url_end, method='get', format='text', **kwargs):
     if 'headers' in kwargs:

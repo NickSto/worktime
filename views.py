@@ -4,7 +4,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
-from .worktime import WorkTimes, timestring
+from .worktime import WorkTimesDatabase
 from utils import QueryParams, boolish
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def main(request):
   params.add('format', choices=('html', 'plain', 'json'), default='html')
   params.add('numbers', choices=('values', 'text'), default='text')
   params.parse(request.GET)
-  work_times = WorkTimes(backend='database')
+  work_times = WorkTimesDatabase()
   summary = work_times.get_summary(numbers=params['numbers'])
   summary['modes'] = work_times.modes
   if params['format'] == 'html':
@@ -37,7 +37,7 @@ def switch(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times = WorkTimes(backend='database')
+  work_times = WorkTimesDatabase()
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
   params.parse(request.POST)
@@ -52,7 +52,7 @@ def adjust(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times = WorkTimes(backend='database')
+  work_times = WorkTimesDatabase()
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
   params.add('add', type=int)
@@ -78,6 +78,6 @@ def clear(request):
   if request.method != 'POST':
     log.warning('Wrong method.')
     return HttpResponseRedirect(reverse('worktime_main'))
-  work_times = WorkTimes(backend='database')
+  work_times = WorkTimesDatabase()
   work_times.clear()
   return HttpResponseRedirect(reverse('worktime_main'))
