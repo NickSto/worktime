@@ -13,10 +13,20 @@ function main() {
   }
 
   function updateSummary() {
-    makeRequest('GET', applySummary, '/worktime?format=json&numbers=text&via=js');
+    // Only update when the tab is visible.
+    // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
+    // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+    if (!document.hidden) {
+      makeRequest('GET', applySummary, '/worktime?format=json&numbers=text&via=js');
+    }
   }
 
-  window.setInterval(updateSummary, 60*1000);
+  function visibilityHandler() {
+    updateSummary();
+  }
+
+  window.setInterval(updateSummary, 30*1000);
+  document.addEventListener('visibilitychange', visibilityHandler, false);
 }
 
 function makeRequest(method, callback, url) {
@@ -69,4 +79,4 @@ function removeChildren(element) {
   }
 }
 
-window.addEventListener('load', main);
+window.addEventListener('load', main, false);
