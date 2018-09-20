@@ -20,15 +20,17 @@
           <div id="status">
             <h4>
               Current mode:
-              {% if current_mode %}
-                <strong>{{ current_mode }}</strong>
-              {% else %}
-                <strong>None</strong>
-              {% endif %}
+              <strong id="currentMode">
+                {% if current_mode %}
+                  {{ current_mode }}
+                {% else %}
+                  None
+                {% endif %}
+              </strong>
             </h4>
             {% if current_mode %}
               <p>
-                elapsed: {{ current_elapsed }}
+                elapsed: <span id="currentElapsed">{{ current_elapsed }}</span>
               </p>
             {% endif %}
           </div>
@@ -36,18 +38,20 @@
             <div id="totals">
               <h4>Totals</h4>
               <table class="pane1 table-bordered table-condensed">
-                {% for elapsed_line in elapsed %}
-                  <tr>
-                    <td class="name">{{ elapsed_line.mode }}</td>
-                    <td class="value">{{ elapsed_line.time }}</td>
-                  </tr>
-                {% endfor %}
-                {% if ratio %}
-                  <tr>
-                    <td class="name">{{ ratio_str }}</td>
-                    <td class="value">{{ ratio }}</td>
-                  </tr>
-                {% endif %}
+                <tbody id="totalsTable">
+                  {% for elapsed_line in elapsed %}
+                    <tr>
+                      <td class="name">{{ elapsed_line.mode }}</td>
+                      <td class="value">{{ elapsed_line.time }}</td>
+                    </tr>
+                  {% endfor %}
+                  {% if ratio %}
+                    <tr>
+                      <td class="name">{{ ratio_str }}</td>
+                      <td class="value">{{ ratio }}</td>
+                    </tr>
+                  {% endif %}
+                </tbody>
               </table>
             </div>
           {% endif %}
@@ -97,3 +101,7 @@
 
     </div>
 {% endblock content %}
+
+{% block javascript %}
+  <script src="{% static 'worktime/js/main.js' %}?via=html"></script>
+{% endblock javascript %}
