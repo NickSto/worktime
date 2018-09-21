@@ -561,7 +561,13 @@ class WorkTimesDatabase(WorkTimes):
       era = Era.objects.get(current=True)
     except Era.DoesNotExist:
       return summary
-    # Get ratio for the last `recent` seconds.
+    ratio_recent, recent_period = self._get_recent_ratio(recent)
+    summary['ratio_recent'] = ratio_recent
+    summary['recent_period'] = recent_period
+    return summary
+
+  def _get_recent_ratio(self, recent):
+    """Get ratio for only the last `recent` seconds."""
     cutoff = int(time.time()) - recent
     periods = Period.objects.filter(era=era, end__gte=cutoff)
     try:
@@ -583,7 +589,13 @@ class WorkTimesDatabase(WorkTimes):
     for adjustment in Adjustment.objects.filter(era=era, timestamp__gte=cutoff):
       for i in 0, 1:
         if adjustment.mode == ratio[i]:
-          totals[i] += adjustment.delta
+          # Expand the adjustment backward into a "virtual period" as `delta` long, ending when
+          # the adjustment was made. Then, only count the part of the adjustment before the period.
+          if adjustment.delta > recent:
+            sign = int(adjustment.delta / abs(adjustment.delta))
+            totals[i] += sign * (adjustment.timestamp - cutoff)
+          else:
+            totals[i] += adjustment.delta
     logging.info('Recent totals: {} in {}, {} in {}.'.format(totals[0], ratio[0], totals[1], ratio[1]))
     if totals[1] == 0:
       if numbers == 'values':
@@ -594,21 +606,20 @@ class WorkTimesDatabase(WorkTimes):
       ratio_recent = totals[0]/totals[1]
       if numbers == 'text':
         ratio_recent = '{:0.2f}'.format(ratio_recent)
-    summary['ratio_recent'] = ratio_recent
     # Store the period of time the recent ratio is for.
     if numbers == 'values':
-      summary['recent_period'] = recent
+      recent_period = recent
     elif numbers == 'text':
       recent_hrs = recent/60/60
       if recent_hrs == round(recent_hrs):
-        summary['recent_period'] = '{}hr'.format(round(recent_hrs))
+        recent_period = '{}hr'.format(round(recent_hrs))
       else:
         recent_min = recent/60
         if recent_min < 60 and recent_min == round(recent_min):
-          summary['recent_period'] = '{}min'.format(round(recent_min))
+          recent_period = '{}min'.format(round(recent_min))
         else:
-          summary['recent_period'] = timestring(recent)
-    return summary
+          recent_period = timestring(recent)
+    return ratio_recent, recent_period
 
 
 class WorkTimesWeb(WorkTimes):
