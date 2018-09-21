@@ -50,6 +50,12 @@
                       <td class="name">{{ ratio_str }}</td>
                       <td class="value">{{ ratio }}</td>
                     </tr>
+                    {% if ratio_recent %}
+                      <tr>
+                        <td class="name">{{ ratio_str }} {{ recent_period }}</td>
+                        <td class="value">{{ ratio_recent }}</td>
+                      </tr>
+                    {% endif %}
                   {% endif %}
                 </tbody>
               </table>

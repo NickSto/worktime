@@ -8,8 +8,10 @@ function main() {
     // Insert the new data into the page.
     // Called once the XMLHttpRequest has gotten a response.
     var summary = this.response;
-    applyStatus(summary, currentModeElem, currentElapsedElem);
-    applyTotals(summary, totalsElem);
+    if (summary) {
+      applyStatus(summary, currentModeElem, currentElapsedElem);
+      applyTotals(summary, totalsElem);
+    }
   }
 
   function updateSummary() {
@@ -57,6 +59,10 @@ function applyTotals(summary, totalsElem) {
   if (summary.ratio_str) {
     var row = makeRow(summary.ratio_str, summary.ratio);
     totalsElem.appendChild(row);
+    if (summary.ratio_recent) {
+      var row = makeRow(summary.ratio_str+' '+summary.recent_period, summary.ratio_recent);
+      totalsElem.appendChild(row);
+    }
   }
 }
 

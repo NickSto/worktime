@@ -11,9 +11,10 @@ try:
 except ImportError:
   requests = None
 try:
-  from .models import Status, Elapsed
+  from .models import Era, Period, Total, Adjustment
+  from django.db import transaction, DatabaseError
 except ImportError:
-  Status = Elapsed = None
+  pass
 assert sys.version_info.major >= 3, 'Python 3 required'
 
 MODES  = ['w','p','n','s']
@@ -226,9 +227,7 @@ class WorkTimes(object):
       if old_mode == new_mode:
         return old_mode, None
       now = int(time.time())
-      elapsed = self.get_elapsed(old_mode)
-      elapsed = elapsed + old_elapsed
-      self.set_elapsed(old_mode, elapsed)
+      self.add_elapsed(old_mode, old_elapsed)
     self.set_status(new_mode)
     return old_mode, old_elapsed
 
@@ -285,6 +284,7 @@ class WorkTimes(object):
     """Return (mode, elapsed): the current mode string, and the number of seconds we've been in it."""
     raise NotImplementedError
 
+  #TODO: Remove, make an implementation detail?
   def set_status(self, mode=None):
     """Set the current mode to `mode`, and reset its starting time to now.
     If no mode is given, erase the current status."""
@@ -294,6 +294,7 @@ class WorkTimes(object):
     """Get the total number of seconds we've spend in `mode` (NOT including the current period)."""
     raise NotImplementedError
 
+  #TODO: Remove, make an implementation detail?
   def set_elapsed(self, mode, elapsed):
     """Set the total number of seconds we've spent in `mode` to `elapsed`."""
     raise NotImplementedError
@@ -421,51 +422,193 @@ class WorkTimesFiles(WorkTimes):
 class WorkTimesDatabase(WorkTimes):
 
   def clear(self):
-    Status.objects.all().delete()
-    Elapsed.objects.all().delete()
+    # Create a new Era
+    new_era = Era(current=True)
+    # Get the current Era, if any, and end it.
+    try:
+      old_era = Era.objects.get(current=True)
+      old_era.current = False
+    except Era.DoesNotExist:
+      old_era = None
+    # Get the current Period, if any, and end it.
+    if old_era:
+      try:
+        current_period = Period.objects.get(era=old_era, end=None, next=None)
+        current_period.end = int(time.time())
+      except Period.DoesNotExist:
+        current_period = None
+    else:
+      current_period = None
+    # Commit changes.
+    with transaction.atomic():
+      new_era.save()
+      if old_era:
+        old_era.save()
+      if current_period:
+        current_period.save()
 
-  def get_status(self):
-    statuses = Status.objects.all()
-    assert len(statuses) <= 1, statuses
-    if statuses:
-      status = statuses[0]
-      self.validate_mode(status.mode)
-      now = int(time.time())
-      return status.mode, now - status.start
+  def get_status(self, era=None):
+    # Get the current Era, if not already given.
+    if era is None:
+      try:
+        era = Era.objects.get(current=True)
+      except Era.DoesNotExist:
+        return None, None
+    # Get the current Period.
+    try:
+      current_period = Period.objects.get(era=era, end=None, next=None)
+    except Period.DoesNotExist:
+      return None, None
+    # Calculate and return mode, elapsed
+    self.validate_mode(current_period.mode)
+    now = int(time.time())
+    return current_period.mode, now - current_period.start
+
+  def switch_mode(self, mode):
+    # Note: If mode is None, this will just create a new Period where the mode is None.
+    self.validate_mode(mode)
+    # Get the current Era, or create one if it doesn't exist.
+    era, created = Era.objects.get_or_create(current=True)
+    # Create a new Period.
+    now = int(time.time())
+    new_period = Period(era=era, mode=mode, start=now)
+    # Get the old Period, if any.
+    try:
+      old_period = Period.objects.get(era=era, end=None, next=None)
+    except Period.DoesNotExist:
+      old_period = None
+    if old_period:
+      # If there was an old Period, end it, and add its elapsed time to the Total.
+      old_period.end = now
+      new_period.prev = old_period
+      if mode is None:
+        logging.info('No mode.')
+        total = None
+      else:
+        total, created = Total.objects.get_or_create(era=era, mode=old_period.mode)
+        total.elapsed += old_period.elapsed
+    else:
+      total = None
+    # Commit changes.
+    with transaction.atomic():
+      new_period.save()
+      if old_period:
+        old_period.save()
+      if total:
+        total.save()
+    if old_period:
+      return old_period.mode, old_period.elapsed
     else:
       return None, None
 
-  def set_status(self, mode):
-    self.validate_mode(mode)
-    Status.objects.all().delete()
-    if mode is not None:
-      now = int(time.time())
-      status = Status(mode=mode, start=now)
-      status.save()
-
   def get_elapsed(self, mode):
+    if mode is None:
+      return None
     self.validate_mode(mode)
+    # Get the current Era.
     try:
-      elapsed = Elapsed.objects.get(mode=mode)
-    except Elapsed.DoesNotExist:
+      era = Era.objects.get(current=True)
+    except Era.DoesNotExist:
       return 0
-    return elapsed.elapsed
-
-  def set_elapsed(self, mode, elapsed_time):
-    self.validate_mode(mode)
+    # Get the current Period.
+    now = int(time.time())
     try:
-      elapsed = Elapsed.objects.get(mode=mode)
-      elapsed.delete()
-    except Elapsed.DoesNotExist:
-      pass
-    elapsed = Elapsed(mode=mode, elapsed=elapsed_time)
-    elapsed.save()
+      current_period = Period.objects.get(era=era, mode=mode, end=None, next=None)
+      elapsed_period = now - current_period.start
+    except Period.DoesNotExist:
+      elapsed_period = 0
+    # Get the Total for this mode.
+    try:
+      total = Total.objects.get(era=era, mode=mode)
+      elapsed_total = total.elapsed
+    except Total.DoesNotExist:
+      elapsed_total = 0
+    return elapsed_period + elapsed_total
+
+  def add_elapsed(self, mode, delta):
+    assert mode is not None, mode
+    self.validate_mode(mode)
+    # Get the current Era.
+    try:
+      era = Era.objects.get(current=True)
+    except Era.DoesNotExist:
+      return False
+    now = int(time.time())
+    # Create an Adjustment, and add to the Total for this mode.
+    adjustment = Adjustment(era=era, mode=mode, delta=delta, timestamp=now)
+    total, created = Total.objects.get_or_create(era=era, mode=mode)
+    total.elapsed += delta
+    # Commit changes.
+    with transaction.atomic():
+      adjustment.save()
+      total.save()
+    return True
 
   def get_all_elapsed(self):
+    try:
+      era = Era.objects.get(current=True)
+    except Era.DoesNotExist:
+      return {}
     data = {}
-    for elapsed in Elapsed.objects.all():
-      data[elapsed.mode] = elapsed.elapsed
+    for total in Total.objects.filter(era=era):
+      data[total.mode] = total.elapsed
     return data
+
+  def get_summary(self, numbers='values', ratio=('p', 'w'), recent=6*60*60):
+    """Augment the default summary with a ratio for just the last `ratio` seconds."""
+    summary = super().get_summary(numbers=numbers, ratio=ratio)
+    try:
+      era = Era.objects.get(current=True)
+    except Era.DoesNotExist:
+      return summary
+    # Get ratio for the last `recent` seconds.
+    cutoff = int(time.time()) - recent
+    periods = Period.objects.filter(era=era, end__gte=cutoff)
+    try:
+      current_period = Period.objects.get(era=era, end=None, next=None)
+    except Period.DoesNotExist:
+      current_period = None
+    totals = [0, 0]
+    for period in list(periods) + [current_period]:
+      for i in 0, 1:
+        if period and period.mode == ratio[i]:
+          if period.start >= cutoff:
+            totals[i] += period.elapsed
+          else:
+            totals[i] += period.elapsed - (cutoff-period.start)
+    #TODO: If an adjustment happened earlier than this cutoff, but during a period that ended after
+    #      it, that might cause unnatural-feeling results. E.g. Maybe I left it on 'w' for an hour,
+    #      but took a 30 min break and forgot to turn it off. So I did an adjustment of -30, but
+    #      then left it on 'w' because I was back. This could possibly make a really weird ratio.
+    for adjustment in Adjustment.objects.filter(era=era, timestamp__gte=cutoff):
+      for i in 0, 1:
+        if adjustment.mode == ratio[i]:
+          totals[i] += adjustment.delta
+    logging.info('Recent totals: {} in {}, {} in {}.'.format(totals[0], ratio[0], totals[1], ratio[1]))
+    if totals[1] == 0:
+      if numbers == 'values':
+        ratio_recent = float('inf')
+      elif numbers == 'text':
+        ratio_recent = '∞'
+    else:
+      ratio_recent = totals[0]/totals[1]
+      if numbers == 'text':
+        ratio_recent = '{:0.2f}'.format(ratio_recent)
+    summary['ratio_recent'] = ratio_recent
+    # Store the period of time the recent ratio is for.
+    if numbers == 'values':
+      summary['recent_period'] = recent
+    elif numbers == 'text':
+      recent_hrs = recent/60/60
+      if recent_hrs == round(recent_hrs):
+        summary['recent_period'] = '{}hr'.format(round(recent_hrs))
+      else:
+        recent_min = recent/60
+        if recent_min < 60 and recent_min == round(recent_min):
+          summary['recent_period'] = '{}min'.format(round(recent_min))
+        else:
+          summary['recent_period'] = timestring(recent)
+    return summary
 
 
 class WorkTimesWeb(WorkTimes):
