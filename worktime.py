@@ -598,9 +598,10 @@ class WorkTimesDatabase(WorkTimes):
         if adjustment.mode == ratio[i]:
           # Expand the adjustment backward into a "virtual period" as `delta` long, ending when
           # the adjustment was made. Then, only count the part of the adjustment before the period.
-          if adjustment.delta > recent:
+          time_btwn_adj_and_cutoff = adjustment.timestamp - cutoff
+          if abs(adjustment.delta) > time_btwn_adj_and_cutoff:
             sign = int(adjustment.delta / abs(adjustment.delta))
-            totals[i] += sign * (adjustment.timestamp - cutoff)
+            totals[i] += sign * time_btwn_adj_and_cutoff
           else:
             totals[i] += adjustment.delta
     logging.info('Recent totals: {} in {}, {} in {}.'.format(totals[0], ratio[0], totals[1], ratio[1]))
