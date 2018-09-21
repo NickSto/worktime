@@ -1,4 +1,9 @@
 
+#currentMode {
+  margin-left: 10px;
+  margin-right: 5px;
+}
+
 #totals td {
   width: 4em;
   padding-left: 12px;
@@ -22,9 +27,13 @@
   padding-left: 10px;
 }
 
+#adjust_delta .description {
+  padding-left: 5px;
+}
+
 #adjust_delta p {
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding-top: 15px;
+  padding-bottom: 15px;
 }
 
 #adjust_delta .verb {

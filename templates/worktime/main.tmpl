@@ -14,12 +14,18 @@
 
       <section class="panel panel-shrink">
         <div class="panel-heading">
-          <h4>Worktime</h4>
+          <h3>
+            {% if era %}
+              {{ era }}
+            {% else %}
+              Worktime
+            {% endif %}
+          </h3>
         </div>
         <div class="panel-body">
           <div id="status">
             <h4>
-              Current mode:
+              Current status:
               <strong id="currentMode">
                 {% if current_mode %}
                   {{ current_mode }}
@@ -27,12 +33,12 @@
                   None
                 {% endif %}
               </strong>
+              <span id="currentElapsed">
+                {% if current_mode %}
+                  {{ current_elapsed }}
+                {% endif %}
+              </span>
             </h4>
-            {% if current_mode %}
-              <p>
-                elapsed: <span id="currentElapsed">{{ current_elapsed }}</span>
-              </p>
-            {% endif %}
           </div>
           {% if elapsed %}
             <div id="totals">
@@ -66,7 +72,7 @@
             <form id="switch" class="list-group-item action-buttons" name='switch' method='post' action="{% url 'worktime:switch' %}">
               {% csrf_token %}
               <p>
-                Switch mode to:
+                <strong>Switch</strong> mode to:
               </p>
               {% for mode in modes %}
                 <button class="btn btn-default" name="mode" value="{{ mode }}">
@@ -77,6 +83,7 @@
             <form id="adjust" name="adjust" method="post" action="{% url 'worktime:adjust' %}">
               {% csrf_token %}
               <div id="adjust_delta" class="pull-left">
+                <span class="description"><strong>Adjust</strong> totals:</span>
                 <p>
                   <span class="verb">Add</span>
                   <input name="add" type="text">

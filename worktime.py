@@ -561,6 +561,7 @@ class WorkTimesDatabase(WorkTimes):
       era = Era.objects.get(current=True)
     except Era.DoesNotExist:
       return summary
+    summary['era'] = era.description
     ratio_recent, recent_period = self._get_recent_ratio(numbers, ratio, recent, era=era)
     if ratio_recent is not None:
       summary['ratio_recent'] = ratio_recent
