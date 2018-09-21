@@ -561,13 +561,19 @@ class WorkTimesDatabase(WorkTimes):
       era = Era.objects.get(current=True)
     except Era.DoesNotExist:
       return summary
-    ratio_recent, recent_period = self._get_recent_ratio(recent)
-    summary['ratio_recent'] = ratio_recent
-    summary['recent_period'] = recent_period
+    ratio_recent, recent_period = self._get_recent_ratio(numbers, ratio, recent, era=era)
+    if ratio_recent is not None:
+      summary['ratio_recent'] = ratio_recent
+      summary['recent_period'] = recent_period
     return summary
 
-  def _get_recent_ratio(self, recent):
+  def _get_recent_ratio(self, numbers='values', ratio=('p', 'w'), recent=6*60*60, era=None):
     """Get ratio for only the last `recent` seconds."""
+    if era is None:
+      try:
+        era = Era.objects.get(current=True)
+      except Era.DoesNotExist:
+        return None, None
     cutoff = int(time.time()) - recent
     periods = Period.objects.filter(era=era, end__gte=cutoff)
     try:
