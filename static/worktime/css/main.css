@@ -3,6 +3,13 @@
   padding: 10px 20px 20px 20px;
 }
 
+/* When the screen is too small, stop the floats and go to one vertical column. */
+@media (max-width: 615px) {
+  .panel-body > section {
+    float: none !important;
+  }
+}
+
 #currentMode {
   margin-left: 10px;
   margin-right: 5px;
