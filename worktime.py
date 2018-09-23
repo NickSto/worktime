@@ -454,6 +454,30 @@ class WorkTimesDatabase(WorkTimes):
       if current_period:
         current_period.save()
 
+  def switch_era(self, new_era_id):
+    # Get the new era, make it the current one.
+    try:
+      new_era = Era.objects.get(pk=new_era_id)
+    except Era.DoesNotExist:
+      return False
+    new_era.current = True
+    # Get the old era, make it not current anymore.
+    old_era = Era.objects.get(current=True)
+    old_era.current = False
+    # Get the current Period and end it.
+    try:
+      current_period = Period.objects.get(era=old_era, end=None, next=None)
+      current_period.end = int(time.time())
+    except Period.DoesNotExist:
+      current_period = None
+    # Commit changes.
+    with transaction.atomic():
+      old_era.save()
+      new_era.save()
+      if current_period:
+        current_period.save()
+    return True
+
   def get_status(self, era=None):
     # Get the current Era, if not already given.
     if era is None:

@@ -95,16 +95,7 @@ def switchera(request):
   if params['newEra']:
     work_times.clear(params['newEra'])
   elif params['era'] is not None:
-    try:
-      new_era = Era.objects.get(pk=params['era'])
-    except Era.DoesNotExist:
-      return HttpResponseRedirect(reverse('worktime_main'))
-    current_era = Era.objects.get(current=True)
-    new_era.current = True
-    current_era.current = False
-    with transaction.atomic():
-      current_era.save()
-      new_era.save()
+    work_times.switch_era(params['era'])
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @csrf_exempt
