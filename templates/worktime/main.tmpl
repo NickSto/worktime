@@ -47,18 +47,20 @@
                 <tbody id="totalsTable">
                   {% for elapsed_line in elapsed %}
                     <tr>
+                      <td class="name dummy"></td>
                       <td class="name">{{ elapsed_line.mode }}</td>
                       <td class="value">{{ elapsed_line.time }}</td>
                     </tr>
                   {% endfor %}
                   {% if ratio %}
                     <tr>
-                      <td class="name">{{ ratio_str }}</td>
+                      <td class="name" rowspan="2">{{ ratio_str }}</td>
+                      <td class="name">total</td>
                       <td class="value">{{ ratio }}</td>
                     </tr>
                     {% if ratio_recent %}
                       <tr>
-                        <td class="name">{{ ratio_str }} {{ recent_period }}</td>
+                        <td class="name">{{ recent_period }}</td>
                         <td class="value">{{ ratio_recent }}</td>
                       </tr>
                     {% endif %}

@@ -53,28 +53,45 @@ function applyTotals(summary, totalsElem) {
   removeChildren(totalsElem);
   for (var i = 0; i < summary.elapsed.length; i++) {
     var total = summary.elapsed[i];
-    var row = makeRow(total.mode, total.time);
+    var row = makeRow("", total.mode, total.time);
     totalsElem.appendChild(row);
   }
   if (summary.ratio_str) {
-    var row = makeRow(summary.ratio_str, summary.ratio);
+    if (summary.ratio_recent) {
+      var rowspan = 2;
+    } else {
+      var rowspan = null;
+    }
+    var row = makeRow(summary.ratio_str, 'total', summary.ratio, rowspan);
     totalsElem.appendChild(row);
     if (summary.ratio_recent) {
-      var row = makeRow(summary.ratio_str+' '+summary.recent_period, summary.ratio_recent);
+      var row = makeRow(null, summary.recent_period, summary.ratio_recent);
       totalsElem.appendChild(row);
     }
   }
 }
 
-function makeRow(name, value) {
+function makeRow(name1, name2, value, rowspan) {
   var row = document.createElement('tr');
-  var nameCell = document.createElement('td');
+  if (name1 !== null) {
+    var name1Cell = document.createElement('td');
+    name1Cell.className = 'name';
+    if (name1 === "") {
+      name1Cell.classList.add('dummy');
+    }
+    name1Cell.textContent = name1;
+    if (rowspan) {
+      name1Cell.setAttribute('rowspan', rowspan);
+    }
+    row.appendChild(name1Cell);
+  }
+  var name2Cell = document.createElement('td');
   var valueCell = document.createElement('td');
-  nameCell.className = 'name';
+  name2Cell.className = 'name';
   valueCell.className = 'value';
-  nameCell.textContent = name;
+  name2Cell.textContent = name2;
   valueCell.textContent = value;
-  row.appendChild(nameCell);
+  row.appendChild(name2Cell);
   row.appendChild(valueCell);
   return row;
 }

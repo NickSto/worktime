@@ -14,6 +14,14 @@
   text-align: right;
 }
 
+#totalsTable td.dummy {
+  border-right: none;
+}
+
+#totalsTable td.dummy + td {
+  border-left: none;
+}
+
 #actions form {
   border: 1px solid #ddd;
 }
