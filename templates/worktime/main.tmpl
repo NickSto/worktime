@@ -23,49 +23,7 @@
           </h3>
         </div>
         <div class="panel-body">
-          <div id="status">
-            <h4>
-              Current status:
-              <strong id="currentMode">
-                {% if current_mode %}
-                  {{ current_mode }}
-                {% else %}
-                  None
-                {% endif %}
-              </strong>
-              <span id="currentElapsed">
-                {% if current_mode %}
-                  {{ current_elapsed }}
-                {% endif %}
-              </span>
-            </h4>
-          </div>
-          {% if elapsed %}
-            <div id="totals">
-              <h4>Totals</h4>
-              <table class="pane1 table-bordered table-condensed">
-                <tbody id="totalsTable">
-                  {% for elapsed_line in elapsed %}
-                    <tr>
-                      <td class="name dummy"></td>
-                      <td class="name">{{ elapsed_line.mode }}</td>
-                      <td class="value">{{ elapsed_line.time }}</td>
-                    </tr>
-                  {% endfor %}
-                  {% for ratio in ratios %}
-                    <tr>
-                      {% if forloop.first %}
-                        <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
-                      {% endif %}
-                      <td class="name">{{ ratio.timespan }}</td>
-                      <td class="value">{{ ratio.value }}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% endif %}
-          <div id="actions">
+          <section id="actions" class="pull-left">
             <h4>Actions</h4>
             <form id="switch" class="list-group-item action-buttons" name='switch' method='post' action="{% url 'worktime:switch' %}">
               {% csrf_token %}
@@ -106,7 +64,51 @@
               {% csrf_token %}
               <button class="btn btn-danger" name="action" value="clear">clear</button>
             </form>
-          </div>
+          </section>
+          <section id="stats" class="pull-right">
+            <div id="status">
+              <h4>
+                Current status:
+                <strong id="currentMode">
+                  {% if current_mode %}
+                    {{ current_mode }}
+                  {% else %}
+                    None
+                  {% endif %}
+                </strong>
+                <span id="currentElapsed">
+                  {% if current_mode %}
+                    {{ current_elapsed }}
+                  {% endif %}
+                </span>
+              </h4>
+            </div>
+            {% if elapsed %}
+              <div id="totals">
+                <h4>Totals</h4>
+                <table class="pane1 table-bordered table-condensed">
+                  <tbody id="totalsTable">
+                    {% for elapsed_line in elapsed %}
+                      <tr>
+                        <td class="name dummy"></td>
+                        <td class="name">{{ elapsed_line.mode }}</td>
+                        <td class="value">{{ elapsed_line.time }}</td>
+                      </tr>
+                    {% endfor %}
+                    {% for ratio in ratios %}
+                      <tr>
+                        {% if forloop.first %}
+                          <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
+                        {% endif %}
+                        <td class="name">{{ ratio.timespan }}</td>
+                        <td class="value">{{ ratio.value }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% endif %}
+          </section>
         </div>
       </section>
 

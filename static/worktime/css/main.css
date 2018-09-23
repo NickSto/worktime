@@ -1,4 +1,8 @@
 
+.panel-body > section {
+  padding: 10px 20px 20px 20px;
+}
+
 #currentMode {
   margin-left: 10px;
   margin-right: 5px;
