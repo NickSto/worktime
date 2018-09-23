@@ -17,7 +17,7 @@ def main(request):
   params.add('numbers', choices=('values', 'text'), default='text')
   params.parse(request.GET)
   work_times = WorkTimesDatabase()
-  summary = work_times.get_summary(numbers=params['numbers'])
+  summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
   summary['modes'] = work_times.modes
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', summary)
@@ -28,8 +28,8 @@ def main(request):
     lines.append('status\t{current_mode}\t{current_elapsed}'.format(**summary))
     for elapsed in summary['elapsed']:
       lines.append('total\t{mode}\t{time}'.format(**elapsed))
-    if summary['ratio'] is not None:
-      lines.append('ratio\t{ratio_str}\t{ratio}'.format(**summary))
+    for ratio in summary['ratios']:
+      lines.append('ratio\t{0}\t{timespan}\t{value}'.format(summary['ratio_str'], **ratio))
     return HttpResponse('\n'.join(lines), content_type=settings.PLAINTEXT)
 
 @csrf_exempt

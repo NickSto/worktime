@@ -52,19 +52,15 @@
                       <td class="value">{{ elapsed_line.time }}</td>
                     </tr>
                   {% endfor %}
-                  {% if ratio %}
+                  {% for ratio in ratios %}
                     <tr>
-                      <td class="name" rowspan="2">{{ ratio_str }}</td>
-                      <td class="name">total</td>
-                      <td class="value">{{ ratio }}</td>
+                      {% if forloop.first %}
+                        <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
+                      {% endif %}
+                      <td class="name">{{ ratio.timespan }}</td>
+                      <td class="value">{{ ratio.value }}</td>
                     </tr>
-                    {% if ratio_recent %}
-                      <tr>
-                        <td class="name">{{ recent_period }}</td>
-                        <td class="value">{{ ratio_recent }}</td>
-                      </tr>
-                    {% endif %}
-                  {% endif %}
+                  {% endfor %}
                 </tbody>
               </table>
             </div>

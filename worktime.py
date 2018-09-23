@@ -157,12 +157,13 @@ def make_report(summary, message=None):
     lines.append('{}:\t{}'.format(elapsed['mode'], timestring(elapsed['time'])))
   body = '\n'.join(lines)
   # If requested, calculate the ratio of the times for the specified modes.
-  if summary['ratio'] is not None:
-    if summary['ratio'] == float('inf'):
-      ratio = '∞'
-    else:
-      ratio = '{:0.2f}'.format(summary['ratio'])
-    body += '\n{}:\t{}'.format(summary['ratio_str'], ratio)
+  for ratio in summary['ratios']:
+    if ratio['timespan'] == float('inf'):
+      if ratio['value'] == float('inf'):
+        ratio_value_str = '∞'
+      else:
+        ratio_value_str = '{:0.2f}'.format(ratio['value'])
+      body += '\n{}:\t{}'.format(summary['ratio_str'], ratio_value_str)
   return title, body
 
 
@@ -236,7 +237,7 @@ class WorkTimes(object):
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
 
-  def get_summary(self, numbers='values', ratio=('p', 'w')):
+  def get_summary(self, numbers='values', modes=('p', 'w')):
     summary = {}
     # Get the current status and how long it's been happening.
     current_mode, elapsed = self.get_status()
@@ -265,19 +266,25 @@ class WorkTimes(object):
           elapsed_data = {'mode':mode, 'time':timestring(all_elapsed[mode])}
         summary['elapsed'].append(elapsed_data)
     # If requested, calculate the ratio of the times for the specified modes.
-    if ratio and ratio[0] in all_elapsed and ratio[1] in all_elapsed:
-      summary['ratio_str'] = '{}/{}'.format(ratio[0], ratio[1])
-      if all_elapsed[ratio[1]] == 0:
-        summary['ratio'] = float('inf')
+    if modes and modes[0] in all_elapsed and modes[1] in all_elapsed:
+      summary['ratio_str'] = '{}/{}'.format(modes[0], modes[1])
+      if all_elapsed[modes[1]] == 0:
+        ratio_value = float('inf')
       else:
-        summary['ratio'] = all_elapsed[ratio[0]] / all_elapsed[ratio[1]]
+        ratio_value = all_elapsed[modes[0]] / all_elapsed[modes[1]]
       if numbers == 'text':
-        if summary['ratio'] == float('inf'):
-          summary['ratio'] = '∞'
+        if ratio_value == float('inf'):
+          ratio_value = '∞'
         else:
-          summary['ratio'] = '{:0.2f}'.format(summary['ratio'])
+          ratio_value = '{:0.2f}'.format(ratio_value)
+      if numbers == 'values':
+        ratio_timespan = float('inf')
+      elif numbers == 'text':
+        ratio_timespan = 'total'
+      summary['ratios'] = [{'timespan':ratio_timespan, 'value':ratio_value}]
     else:
-      summary['ratio_str'] = summary['ratio'] = None
+      summary['ratio_str'] = None
+      summary['ratios'] = []
     return summary
 
   def get_status(self):
@@ -554,80 +561,90 @@ class WorkTimesDatabase(WorkTimes):
       data[total.mode] = total.elapsed
     return data
 
-  def get_summary(self, numbers='values', ratio=('p', 'w'), recent=6*60*60):
+  def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
     """Augment the default summary with a ratio for just the last `ratio` seconds."""
-    summary = super().get_summary(numbers=numbers, ratio=ratio)
+    summary = super().get_summary(numbers=numbers, modes=modes)
     try:
       era = Era.objects.get(current=True)
     except Era.DoesNotExist:
       return summary
     summary['era'] = era.description
-    ratio_recent, recent_period = self._get_recent_ratio(numbers, ratio, recent, era=era)
-    if ratio_recent is not None:
-      summary['ratio_recent'] = ratio_recent
-      summary['recent_period'] = recent_period
+    ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
+    summary['ratios'].extend(ratios)
     return summary
 
-  def _get_recent_ratio(self, numbers='values', ratio=('p', 'w'), recent=6*60*60, era=None):
-    """Get ratio for only the last `recent` seconds."""
+  def _get_recent_ratios(self, timespans, numbers='values', modes=('p', 'w'), era=None):
+    """Get ratio for only the last `timespan` seconds."""
+    ratios = []
     if era is None:
       try:
         era = Era.objects.get(current=True)
       except Era.DoesNotExist:
         return None, None
-    cutoff = int(time.time()) - recent
-    periods = Period.objects.filter(era=era, end__gte=cutoff)
+    now = int(time.time())
+    cutoffs = [now-timespan for timespan in timespans]
+    min_cutoff = min(cutoffs)
+    periods = Period.objects.filter(era=era, end__gte=min_cutoff)
     try:
       current_period = Period.objects.get(era=era, end=None, next=None)
     except Period.DoesNotExist:
       current_period = None
-    totals = [0, 0]
+    totals = []
+    for i in range(len(timespans)):
+      totals.append([0, 0])
     for period in list(periods) + [current_period]:
       for i in 0, 1:
-        if period and period.mode == ratio[i]:
-          if period.start >= cutoff:
-            totals[i] += period.elapsed
-          else:
-            totals[i] += period.elapsed - (cutoff-period.start)
+        for c, cutoff in enumerate(cutoffs):
+          if period and (period.end is None or period.end >= cutoff) and period.mode == modes[i]:
+            if period.start >= cutoff:
+              totals[c][i] += period.elapsed
+            else:
+              totals[c][i] += period.elapsed - (cutoff-period.start)
     #TODO: If an adjustment happened earlier than this cutoff, but during a period that ended after
     #      it, that might cause unnatural-feeling results. E.g. Maybe I left it on 'w' for an hour,
     #      but took a 30 min break and forgot to turn it off. So I did an adjustment of -30, but
     #      then left it on 'w' because I was back. This could possibly make a really weird ratio.
-    for adjustment in Adjustment.objects.filter(era=era, timestamp__gte=cutoff):
+    for adjustment in Adjustment.objects.filter(era=era, timestamp__gte=min_cutoff):
       for i in 0, 1:
-        if adjustment.mode == ratio[i]:
-          # Expand the adjustment backward into a "virtual period" as `delta` long, ending when
-          # the adjustment was made. Then, only count the part of the adjustment before the period.
-          time_btwn_adj_and_cutoff = adjustment.timestamp - cutoff
-          if abs(adjustment.delta) > time_btwn_adj_and_cutoff:
-            sign = int(adjustment.delta / abs(adjustment.delta))
-            totals[i] += sign * time_btwn_adj_and_cutoff
-          else:
-            totals[i] += adjustment.delta
-    logging.info('Recent totals: {} in {}, {} in {}.'.format(totals[0], ratio[0], totals[1], ratio[1]))
-    if totals[1] == 0:
-      if numbers == 'values':
-        ratio_recent = float('inf')
-      elif numbers == 'text':
-        ratio_recent = '∞'
-    else:
-      ratio_recent = totals[0]/totals[1]
-      if numbers == 'text':
-        ratio_recent = '{:0.2f}'.format(ratio_recent)
-    # Store the period of time the recent ratio is for.
-    if numbers == 'values':
-      recent_period = recent
-    elif numbers == 'text':
-      recent_hrs = recent/60/60
-      if recent_hrs == round(recent_hrs):
-        recent_period = '{}hr'.format(round(recent_hrs))
+        for c, cutoff in enumerate(cutoffs):
+          if adjustment.timestamp >= cutoff and adjustment.mode == modes[i]:
+            # Expand the adjustment backward into a "virtual period" as `delta` long, ending when
+            # the adjustment was made. Then, only count the part of the adjustment before the period.
+            time_btwn_adj_and_cutoff = adjustment.timestamp - cutoff
+            if abs(adjustment.delta) > time_btwn_adj_and_cutoff:
+              sign = int(adjustment.delta / abs(adjustment.delta))
+              totals[c][i] += sign * time_btwn_adj_and_cutoff
+            else:
+              totals[c][i] += adjustment.delta
+    for c, timespan in enumerate(timespans):
+      ratio = {}
+      logging.info('Totals for last {}s: {} in {}, {} in {}.'
+                   .format(timespan, totals[c][0], modes[0], totals[c][1], modes[1]))
+      # Store the value of the ratio.
+      if totals[c][1] == 0:
+        if numbers == 'values':
+          ratio['value'] = float('inf')
+        elif numbers == 'text':
+          ratio['value'] = '∞'
       else:
-        recent_min = recent/60
-        if recent_min < 60 and recent_min == round(recent_min):
-          recent_period = '{}min'.format(round(recent_min))
+        ratio['value'] = totals[c][0]/totals[c][1]
+        if numbers == 'text':
+          ratio['value'] = '{:0.2f}'.format(ratio['value'])
+      # Store the period of time the recent ratio is for.
+      if numbers == 'values':
+        ratio['timespan'] = timespan
+      elif numbers == 'text':
+        span_hrs = timespan/60/60
+        if span_hrs == round(span_hrs):
+          ratio['timespan'] = '{}hr'.format(round(span_hrs))
         else:
-          recent_period = timestring(recent)
-    return ratio_recent, recent_period
+          span_min = timespan/60
+          if span_min < 60 and span_min == round(span_min):
+            ratio['timespan'] = '{}min'.format(round(span_min))
+          else:
+            ratio['timespan'] = timestring(timespan)
+      ratios.append(ratio)
+    return ratios
 
 
 class WorkTimesWeb(WorkTimes):

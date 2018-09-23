@@ -56,18 +56,17 @@ function applyTotals(summary, totalsElem) {
     var row = makeRow("", total.mode, total.time);
     totalsElem.appendChild(row);
   }
-  if (summary.ratio_str) {
-    if (summary.ratio_recent) {
-      var rowspan = 2;
+  for (var i = 0; i < summary.ratios.length; i++) {
+    var ratio = summary.ratios[i];
+    if (i === 0) {
+      var rowspan = summary.ratios.length;
+      var name1 = summary.ratio_str;
     } else {
       var rowspan = null;
+      var name1 = null;
     }
-    var row = makeRow(summary.ratio_str, 'total', summary.ratio, rowspan);
+    var row = makeRow(name1, ratio['timespan'], ratio['value'], rowspan);
     totalsElem.appendChild(row);
-    if (summary.ratio_recent) {
-      var row = makeRow(null, summary.recent_period, summary.ratio_recent);
-      totalsElem.appendChild(row);
-    }
   }
 }
 
