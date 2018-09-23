@@ -1,9 +1,11 @@
 import json
 import logging
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
+from .models import Era
 from .worktime import WorkTimesDatabase
 from utils import QueryParams, boolish
 log = logging.getLogger(__name__)
@@ -19,6 +21,14 @@ def main(request):
   work_times = WorkTimesDatabase()
   summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
   summary['modes'] = work_times.modes
+  summary['eras'] = []
+  for era in Era.objects.filter(current=False):
+    era_dict = {'id':era.id}
+    if era.description:
+      era_dict['name'] = era.description[:22]
+    else:
+      era_dict['name'] = era.id
+    summary['eras'].append(era_dict)
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':
@@ -71,6 +81,30 @@ def adjust(request):
     delta = -params['subtract']
   log.info('Adding {!r} to {!r}'.format(delta, params['mode']))
   work_times.add_elapsed(params['mode'], delta*60)
+  return HttpResponseRedirect(reverse('worktime_main'))
+
+def switchera(request):
+  if request.method != 'POST':
+    log.warning('Wrong method.')
+    return HttpResponseRedirect(reverse('worktime_main'))
+  params = QueryParams()
+  params.add('era', type=int)
+  params.add('newEra')
+  params.parse(request.POST)
+  work_times = WorkTimesDatabase()
+  if params['newEra']:
+    work_times.clear(params['newEra'])
+  elif params['era'] is not None:
+    try:
+      new_era = Era.objects.get(pk=params['era'])
+    except Era.DoesNotExist:
+      return HttpResponseRedirect(reverse('worktime_main'))
+    current_era = Era.objects.get(current=True)
+    new_era.current = True
+    current_era.current = False
+    with transaction.atomic():
+      current_era.save()
+      new_era.save()
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @csrf_exempt

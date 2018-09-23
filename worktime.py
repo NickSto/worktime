@@ -12,7 +12,7 @@ except ImportError:
   requests = None
 try:
   from .models import Era, Period, Total, Adjustment
-  from django.db import transaction, DatabaseError
+  from django.db import transaction
 except ImportError:
   pass
 assert sys.version_info.major >= 3, 'Python 3 required'
@@ -428,9 +428,9 @@ class WorkTimesFiles(WorkTimes):
 
 class WorkTimesDatabase(WorkTimes):
 
-  def clear(self):
+  def clear(self, new_description=''):
     # Create a new Era
-    new_era = Era(current=True)
+    new_era = Era(current=True, description=new_description)
     # Get the current Era, if any, and end it.
     try:
       old_era = Era.objects.get(current=True)

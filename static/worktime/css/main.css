@@ -26,6 +26,11 @@
   border-left: none;
 }
 
+#actions #switchEra {
+  padding: 15px;
+  border-bottom: none;
+}
+
 #actions form {
   border: 1px solid #ddd;
 }

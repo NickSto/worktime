@@ -8,5 +8,6 @@ urlpatterns = [
   url(r'^$', views.main, name='main'),
   url(r'switch$', views.switch, name='switch'),
   url(r'adjust$', views.adjust, name='adjust'),
+  url(r'switchera$', views.switchera, name='switchera'),
   url(r'clear$', views.clear, name='clear'),
 ]

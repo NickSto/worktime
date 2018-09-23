@@ -36,6 +36,34 @@
                 </button>
               {% endfor %}
             </form>
+            <form id="switchEra" name="switchEra" method="post" action="{% url 'worktime:switchera' %}">
+              {% csrf_token %}
+              {% if eras %}
+                <p>
+                  <strong>Change</strong> project to:
+                </p>
+                <p>
+                  <select name="era">
+                    <option value=""></option>
+                    {% for era in eras %}
+                      <option value="{{ era.id }}">{{ era.name }}</option>
+                    {% endfor %}
+                  </select>
+                </p>
+              {% endif %}
+              <p>
+                {% if eras %}
+                  Or start
+                {% else %}
+                  <strong>Start</strong>
+                {% endif %}
+                a new project:
+              </p>
+              <p>
+                <input name="newEra" type="text">
+              </p>
+              <input class="btn btn-default" type="submit" value="Submit">
+            </form>
             <form id="adjust" name="adjust" method="post" action="{% url 'worktime:adjust' %}">
               {% csrf_token %}
               <div id="adjust_delta" class="pull-left">
@@ -58,11 +86,6 @@
                   </button>
                 {% endfor %}
               </div>
-            </form>
-            <div class="clearfix"></div>
-            <form id="clear" class="buttons" name="clear" method="post" action="{% url 'worktime:clear' %}">
-              {% csrf_token %}
-              <button class="btn btn-danger" name="action" value="clear">clear</button>
             </form>
           </section>
           <section id="stats" class="pull-right">
