@@ -167,7 +167,14 @@ def make_report(summary, message=None):
   return title, body
 
 
-def timestring(sec_total):
+def timestring(sec_total, format='HH:MM', abbrev=True):
+  if format == 'HH:MM':
+    return timestring_hhmm(sec_total)
+  elif format == 'even':
+    return timestring_even(sec_total, abbrev=abbrev)
+
+
+def timestring_hhmm(sec_total):
   """Convert time in seconds to HH:MM string"""
   if sec_total is None:
     return 'None'
@@ -178,6 +185,34 @@ def timestring(sec_total):
     return "%d:%02d" % (hours, minutes)
   else:
     return str(minutes)
+
+
+def timestring_even(sec_total, abbrev=True):
+  if abbrev:
+    hr_unit = hr_units = 'hr'
+    min_unit = min_units = 'min'
+  else:
+    hr_unit = ' hour'
+    hr_units = ' hours'
+    min_unit = ' minute'
+    min_units = ' minutes'
+  hours = sec_total/60/60
+  if hours >= 1:
+    return format_rounded_num(hours, hr_unit, hr_units)
+  else:
+    minutes = sec_total/60
+    return format_rounded_num(minutes, min_unit, min_units)
+
+
+def format_rounded_num(quantity, singular, plural):
+  if round(quantity, 1) == round(quantity):
+    if round(quantity) == 1:
+      unit = singular
+    else:
+      unit = plural
+    return '{}{}'.format(round(quantity), unit)
+  else:
+    return '{:0.1f}{}'.format(quantity, plural)
 
 
 def untimestring(time_str):
@@ -658,15 +693,7 @@ class WorkTimesDatabase(WorkTimes):
       if numbers == 'values':
         ratio['timespan'] = timespan
       elif numbers == 'text':
-        span_hrs = timespan/60/60
-        if span_hrs == round(span_hrs):
-          ratio['timespan'] = '{}hr'.format(round(span_hrs))
-        else:
-          span_min = timespan/60
-          if span_min < 60 and span_min == round(span_min):
-            ratio['timespan'] = '{}min'.format(round(span_min))
-          else:
-            ratio['timespan'] = timestring(timespan)
+        ratio['timespan'] = timestring(timespan, format='even', abbrev=True)
       ratios.append(ratio)
     return ratios
 
