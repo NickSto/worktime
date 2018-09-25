@@ -29,7 +29,7 @@ def main(request):
     if era.description:
       era_dict['name'] = era.description[:22]
     else:
-      era_dict['name'] = era.id
+      era_dict['name'] = str(era.id)
     summary['eras'].append(era_dict)
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', summary)

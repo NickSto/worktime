@@ -167,14 +167,14 @@ def make_report(summary, message=None):
   return title, body
 
 
-def timestring(sec_total, format='HH:MM', abbrev=True):
+def timestring(sec_total, format='HH:MM', abbrev=True, label_smallest=False):
   if format == 'HH:MM':
-    return timestring_hhmm(sec_total)
+    return timestring_hhmm(sec_total, abbrev=abbrev, label_smallest=label_smallest)
   elif format == 'even':
     return timestring_even(sec_total, abbrev=abbrev)
 
 
-def timestring_hhmm(sec_total):
+def timestring_hhmm(sec_total, abbrev=True, label_smallest=False):
   """Convert time in seconds to HH:MM string"""
   if sec_total is None:
     return 'None'
@@ -184,7 +184,15 @@ def timestring_hhmm(sec_total):
   if hours:
     return "%d:%02d" % (hours, minutes)
   else:
-    return str(minutes)
+    if label_smallest:
+      if abbrev:
+        return '{}min'.format(minutes)
+      elif minutes == 1:
+        return '1 minute'
+      else:
+        return '{} minutes'.format(minutes)
+    else:
+      return str(minutes)
 
 
 def timestring_even(sec_total, abbrev=True):
@@ -741,32 +749,39 @@ class WorkTimesDatabase(WorkTimes):
         end = period.end
       width = round(100 * elapsed / timespan, 1)
       if numbers == 'values':
-        this_timespan = period.elapsed
+        this_timespan = elapsed
       elif numbers == 'text':
-        this_timespan = timestring(period.elapsed)
-      bar_periods.append({'mode':period.mode, 'width':width, 'time':this_timespan,
+        this_timespan = timestring(elapsed, label_smallest=True)
+      bar_periods.append({'mode':period.mode, 'width':width, 'timespan':this_timespan,
                           'start':period.start, 'end':end})
       logging.info('Found {} {} sec long ({}%): {} to {}'
                    .format(period.mode, period.elapsed, width, period.start, period.end))
     # Fill in empty gaps at start or end of timespan with empty bars.
     if len(bar_periods) == 0:
-      bar_periods.append({'mode':None, 'width':100, 'end':now})
+      if numbers == 'values':
+        this_timespan = timespan
+      elif numbers == 'text':
+        this_timespan = timestring(timespan, label_smallest=True)
+      bar_periods.append({'mode':None, 'width':100, 'timespan':this_timespan, 'start':cutoff,
+                          'end':now})
     else:
       if bar_periods[0]['start'] > cutoff+10:
+        elapsed = bar_periods[0]['start'] - cutoff
         if numbers == 'values':
-          this_timespan = period.elapsed
+          this_timespan = elapsed
         elif numbers == 'text':
-          this_timespan = timestring(period.elapsed)
-        width = round(100 * (bar_periods[0]['start'] - cutoff) / timespan, 1)
-        bar_periods.insert(0, {'mode':None, 'width':width, 'time':this_timespan,
+          this_timespan = timestring(elapsed, label_smallest=True)
+        width = round(100 * elapsed / timespan, 1)
+        bar_periods.insert(0, {'mode':None, 'width':width, 'timespan':this_timespan,
                                'start':cutoff, 'end':bar_periods[0]['start']})
       if bar_periods[-1]['end'] < now-10:
+        elapsed = now - bar_periods[-1]['end']
         if numbers == 'values':
-          this_timespan = period.elapsed
+          this_timespan = elapsed
         elif numbers == 'text':
-          this_timespan = timestring(period.elapsed)
-        width = round(100 * (now - bar_periods[-1]['end']) / timespan, 1)
-        bar_periods.append({'mode':None, 'width':width, 'time':this_timespan,
+          this_timespan = timestring(elapsed, label_smallest=True)
+        width = round(100 * elapsed / timespan, 1)
+        bar_periods.append({'mode':None, 'width':width, 'timespan':this_timespan,
                             'start':bar_periods[-1]['end'], 'end':now})
     # Some post-processing to drop periods that are too small and make sure it all adds up to 100%.
     bar_periods = [p for p in bar_periods if p['width'] >= 0.3]

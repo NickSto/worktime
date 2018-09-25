@@ -26,9 +26,12 @@
           {% if history.periods %}
             <section id="history">
               <h4>History</h4>
-              <p>Past {{ history.timespan }}:</p>
+              <p id="history-timespan">Past {{ history.timespan }}:</p>
               <div id="history-bar">
-                {% for period in history.periods %}<span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%"></span>{% endfor %}
+                {% for period in history.periods %}<!--
+                  Workaround to prevent whitespace appearing between the spans.
+               --><span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%" title="{{ period.mode }} {{ period.timespan }}"></span><!--
+             -->{% endfor %}
               </div>
             </section>
           {% endif %}

@@ -3,6 +3,8 @@ function main() {
   var currentModeElem = document.getElementById('currentMode');
   var currentElapsedElem = document.getElementById('currentElapsed');
   var totalsElem = document.getElementById('totalsTable');
+  var historyTimespanElem = document.getElementById('history-timespan');
+  var historyBarElem = document.getElementById('history-bar');
 
   function applySummary() {
     // Insert the new data into the page.
@@ -11,6 +13,7 @@ function main() {
     if (summary) {
       applyStatus(summary, currentModeElem, currentElapsedElem);
       applyTotals(summary, totalsElem);
+      applyHistory(summary, historyTimespanElem, historyBarElem);
     }
   }
 
@@ -94,9 +97,27 @@ function makeRow(name1, name2, value, rowspan) {
   return row;
 }
 
+function applyHistory(summary, historyTimespanElem, historyBarElem) {
+  if (!summary.history) {
+    return;
+  }
+  historyTimespanElem.textContent = "Past "+summary.history.timespan+":";
+  /* Create the bar display. */
+  removeChildren(historyBarElem);
+  for (var i = 0; i < summary.history.periods.length; i++) {
+    var period = summary.history.periods[i];
+    var periodElem = document.createElement('span');
+    periodElem.classList.add('period');
+    periodElem.classList.add('mode-'+period.mode);
+    periodElem.style.width = period.width+"%";
+    periodElem.setAttribute('title', period.mode+" "+period.timespan);
+    historyBarElem.appendChild(periodElem);
+  }
+}
+
 function removeChildren(element) {
-  while (element.children.length > 0) {
-    element.removeChild(element.children[0]);
+  while (element.childNodes.length > 0) {
+    element.removeChild(element.childNodes[0]);
   }
 }
 
