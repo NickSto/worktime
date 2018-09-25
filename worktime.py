@@ -722,7 +722,7 @@ class WorkTimesDatabase(WorkTimes):
       ratios.append(ratio)
     return ratios
 
-  def _get_recent_bars(self, timespan, numbers='values', era=None):
+  def _get_recent_bars(self, timespan, numbers='values', era=None, total_width=99):
     """Get data for a display of recent periods."""
     bar_periods = []
     # Get current Era.
@@ -750,7 +750,7 @@ class WorkTimesDatabase(WorkTimes):
       # If we detect a gap between this period and the last one, insert an empty one.
       if last_end and period.start - last_end > 1:
         elapsed = period.start - last_end
-        width = round(100 * elapsed / timespan, 1)
+        width = round(total_width * elapsed / timespan, 1)
         bar_periods.append({'mode':None, 'width':width, 'start':last_end, 'end':period.start,
                             'timespan':format_timespan(elapsed, numbers)})
         last_end = period.start
@@ -766,31 +766,32 @@ class WorkTimesDatabase(WorkTimes):
       else:
         end = period.end
       last_end = end
-      width = round(100 * elapsed / timespan, 1)
+      width = round(total_width * elapsed / timespan, 1)
       bar_periods.append({'mode':period.mode, 'width':width, 'start':period.start,
                           'timespan':format_timespan(elapsed, numbers), 'end':end})
       logging.info('Found {} {} sec long ({}%): {} to {}'
                    .format(period.mode, period.elapsed, width, period.start, period.end))
     # Fill in empty gaps at start or end of timespan with empty bars.
     if len(bar_periods) == 0:
-      bar_periods.append({'mode':None, 'width':100, 'timespan':format_timespan(timespan, numbers),
-                          'start':cutoff, 'end':now})
+      bar_periods.append({'mode':None, 'width':total_width, 'start':cutoff, 'end':now,
+                          'timespan':format_timespan(timespan, numbers)})
     else:
       if bar_periods[0]['start'] > cutoff+10:
         elapsed = bar_periods[0]['start'] - cutoff
-        width = round(100 * elapsed / timespan, 1)
+        width = round(total_width * elapsed / timespan, 1)
         bar_periods.insert(0, {'mode':None, 'width':width, 'end':bar_periods[0]['start'],
                                'timespan':format_timespan(elapsed, numbers), 'start':cutoff})
       if bar_periods[-1]['end'] < now-10:
         elapsed = now - bar_periods[-1]['end']
-        width = round(100 * elapsed / timespan, 1)
+        width = round(total_width * elapsed / timespan, 1)
         bar_periods.append({'mode':None, 'width':width, 'start':bar_periods[-1]['end'],
                             'timespan':format_timespan(elapsed, numbers), 'end':now})
-    # Some post-processing to drop periods that are too small and make sure it all adds up to 100%.
+    # Some post-processing to drop periods that are too small and make sure it all adds up to
+    # total_width.
     bar_periods = [p for p in bar_periods if p['width'] >= 0.3]
     total_width = sum([p['width'] for p in bar_periods])
-    if total_width != 100:
-      diff = min(0.3, 100 - total_width)
+    if total_width != total_width:
+      diff = min(0.3, total_width - total_width)
       bar_periods[-1]['width'] = round(bar_periods[-1]['width']+diff, 1)
     return bar_periods
 
