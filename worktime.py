@@ -544,6 +544,8 @@ class WorkTimesDatabase(WorkTimes):
     except Period.DoesNotExist:
       old_period = None
     if old_period:
+      if old_period.mode == mode:
+        return old_period.mode, None
       # If there was an old Period, end it, and add its elapsed time to the Total.
       old_period.end = now
       new_period.prev = old_period
@@ -628,8 +630,16 @@ class WorkTimesDatabase(WorkTimes):
     except Era.DoesNotExist:
       return summary
     summary['era'] = era.description
-    ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
-    summary['ratios'].extend(ratios)
+    if timespans:
+      ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
+      summary['ratios'].extend(ratios)
+      timespan = list(sorted(timespans))[0]
+      summary['history'] = {}
+      summary['history']['periods'] = self._get_recent_bars(timespan, numbers=numbers, era=era)
+      if numbers == 'values':
+        summary['history']['timespan'] = timespan
+      elif numbers == 'text':
+        summary['history']['timespan'] = timestring(timespan, format='even', abbrev=False)
     return summary
 
   def _get_recent_ratios(self, timespans, numbers='values', modes=('p', 'w'), era=None):
@@ -697,6 +707,75 @@ class WorkTimesDatabase(WorkTimes):
       ratios.append(ratio)
     return ratios
 
+  def _get_recent_bars(self, timespan, numbers='values', era=None):
+    """Get data for a display of recent periods."""
+    bar_periods = []
+    if era is None:
+      try:
+        era = Era.objects.get(current=True)
+      except Era.DoesNotExist:
+        return bar_periods
+    now = int(time.time())
+    cutoff = now - timespan
+    periods = Period.objects.filter(era=era, end__gte=cutoff).order_by('start')
+    n_periods = len(periods)
+    try:
+      current_period = Period.objects.get(era=era, end=None, next=None)
+      n_periods += 1
+    except Period.DoesNotExist:
+      current_period = None
+    logging.info('Found {} periods in last {}.'.format(n_periods, timespan))
+    for period in list(periods) + [current_period]:
+      if period is None:
+        continue
+      if period.start < cutoff:
+        if period.end is None:
+          elapsed = timespan
+        else:
+          elapsed = period.end - cutoff
+      else:
+        elapsed = period.elapsed
+      if period.end is None:
+        end = now
+      else:
+        end = period.end
+      width = round(100 * elapsed / timespan, 1)
+      if numbers == 'values':
+        this_timespan = period.elapsed
+      elif numbers == 'text':
+        this_timespan = timestring(period.elapsed)
+      bar_periods.append({'mode':period.mode, 'width':width, 'time':this_timespan,
+                          'start':period.start, 'end':end})
+      logging.info('Found {} {} sec long ({}%): {} to {}'
+                   .format(period.mode, period.elapsed, width, period.start, period.end))
+    # Fill in empty gaps at start or end of timespan with empty bars.
+    if len(bar_periods) == 0:
+      bar_periods.append({'mode':None, 'width':100, 'end':now})
+    else:
+      if bar_periods[0]['start'] > cutoff+10:
+        if numbers == 'values':
+          this_timespan = period.elapsed
+        elif numbers == 'text':
+          this_timespan = timestring(period.elapsed)
+        width = round(100 * (bar_periods[0]['start'] - cutoff) / timespan, 1)
+        bar_periods.insert(0, {'mode':None, 'width':width, 'time':this_timespan,
+                               'start':cutoff, 'end':bar_periods[0]['start']})
+      if bar_periods[-1]['end'] < now-10:
+        if numbers == 'values':
+          this_timespan = period.elapsed
+        elif numbers == 'text':
+          this_timespan = timestring(period.elapsed)
+        width = round(100 * (now - bar_periods[-1]['end']) / timespan, 1)
+        bar_periods.append({'mode':None, 'width':width, 'time':this_timespan,
+                            'start':bar_periods[-1]['end'], 'end':now})
+    # Some post-processing to drop periods that are too small and make sure it all adds up to 100%.
+    bar_periods = [p for p in bar_periods if p['width'] >= 0.3]
+    total_width = sum([p['width'] for p in bar_periods])
+    if total_width != 100:
+      diff = 100 - total_width
+      bar_periods[-1]['width'] = round(bar_periods[-1]['width']+diff, 1)
+    return bar_periods
+
 
 class WorkTimesWeb(WorkTimes):
 
@@ -717,6 +796,8 @@ class WorkTimesWeb(WorkTimes):
     self.validate_mode(new_mode)
     # Get the old status.
     old_mode, old_elapsed = self.get_status()
+    if old_mode == new_mode:
+      return old_mode, None
     # Make the switch.
     params = {'mode':new_mode}
     self._make_request('/switch', method='post', data=params, timeout=self.timeout)
