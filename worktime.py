@@ -195,6 +195,13 @@ def timestring_hhmm(sec_total, abbrev=True, label_smallest=False):
       return str(minutes)
 
 
+def format_timespan(seconds, numbers):
+  if numbers == 'values':
+    return seconds
+  elif numbers == 'text':
+    return timestring(seconds, label_smallest=True)
+
+
 def timestring_even(sec_total, abbrev=True):
   if abbrev:
     hr_unit = hr_units = 'hr'
@@ -718,11 +725,13 @@ class WorkTimesDatabase(WorkTimes):
   def _get_recent_bars(self, timespan, numbers='values', era=None):
     """Get data for a display of recent periods."""
     bar_periods = []
+    # Get current Era.
     if era is None:
       try:
         era = Era.objects.get(current=True)
       except Era.DoesNotExist:
         return bar_periods
+    # Get a list of periods in the last `timespan` seconds.
     now = int(time.time())
     cutoff = now - timespan
     periods = Period.objects.filter(era=era, end__gte=cutoff).order_by('start')
@@ -733,9 +742,18 @@ class WorkTimesDatabase(WorkTimes):
     except Period.DoesNotExist:
       current_period = None
     logging.info('Found {} periods in last {}.'.format(n_periods, timespan))
+    # Create a list of bars from the periods.
+    last_end = None
     for period in list(periods) + [current_period]:
       if period is None:
         continue
+      # If we detect a gap between this period and the last one, insert an empty one.
+      if last_end and period.start - last_end > 1:
+        elapsed = period.start - last_end
+        width = round(100 * elapsed / timespan, 1)
+        bar_periods.append({'mode':None, 'width':width, 'start':last_end, 'end':period.start,
+                            'timespan':format_timespan(elapsed, numbers)})
+        last_end = period.start
       if period.start < cutoff:
         if period.end is None:
           elapsed = timespan
@@ -747,47 +765,32 @@ class WorkTimesDatabase(WorkTimes):
         end = now
       else:
         end = period.end
+      last_end = end
       width = round(100 * elapsed / timespan, 1)
-      if numbers == 'values':
-        this_timespan = elapsed
-      elif numbers == 'text':
-        this_timespan = timestring(elapsed, label_smallest=True)
-      bar_periods.append({'mode':period.mode, 'width':width, 'timespan':this_timespan,
-                          'start':period.start, 'end':end})
+      bar_periods.append({'mode':period.mode, 'width':width, 'start':period.start,
+                          'timespan':format_timespan(elapsed, numbers), 'end':end})
       logging.info('Found {} {} sec long ({}%): {} to {}'
                    .format(period.mode, period.elapsed, width, period.start, period.end))
     # Fill in empty gaps at start or end of timespan with empty bars.
     if len(bar_periods) == 0:
-      if numbers == 'values':
-        this_timespan = timespan
-      elif numbers == 'text':
-        this_timespan = timestring(timespan, label_smallest=True)
-      bar_periods.append({'mode':None, 'width':100, 'timespan':this_timespan, 'start':cutoff,
-                          'end':now})
+      bar_periods.append({'mode':None, 'width':100, 'timespan':format_timespan(timespan, numbers),
+                          'start':cutoff, 'end':now})
     else:
       if bar_periods[0]['start'] > cutoff+10:
         elapsed = bar_periods[0]['start'] - cutoff
-        if numbers == 'values':
-          this_timespan = elapsed
-        elif numbers == 'text':
-          this_timespan = timestring(elapsed, label_smallest=True)
         width = round(100 * elapsed / timespan, 1)
-        bar_periods.insert(0, {'mode':None, 'width':width, 'timespan':this_timespan,
-                               'start':cutoff, 'end':bar_periods[0]['start']})
+        bar_periods.insert(0, {'mode':None, 'width':width, 'end':bar_periods[0]['start'],
+                               'timespan':format_timespan(elapsed, numbers), 'start':cutoff})
       if bar_periods[-1]['end'] < now-10:
         elapsed = now - bar_periods[-1]['end']
-        if numbers == 'values':
-          this_timespan = elapsed
-        elif numbers == 'text':
-          this_timespan = timestring(elapsed, label_smallest=True)
         width = round(100 * elapsed / timespan, 1)
-        bar_periods.append({'mode':None, 'width':width, 'timespan':this_timespan,
-                            'start':bar_periods[-1]['end'], 'end':now})
+        bar_periods.append({'mode':None, 'width':width, 'start':bar_periods[-1]['end'],
+                            'timespan':format_timespan(elapsed, numbers), 'end':now})
     # Some post-processing to drop periods that are too small and make sure it all adds up to 100%.
     bar_periods = [p for p in bar_periods if p['width'] >= 0.3]
     total_width = sum([p['width'] for p in bar_periods])
     if total_width != 100:
-      diff = 100 - total_width
+      diff = min(0.3, 100 - total_width)
       bar_periods[-1]['width'] = round(bar_periods[-1]['width']+diff, 1)
     return bar_periods
 
