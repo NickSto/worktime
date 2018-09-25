@@ -42,10 +42,9 @@ function makeRequest(method, callback, url) {
 function applyStatus(summary, currentModeElem, currentElapsedElem) {
   currentModeElem.textContent = summary.current_mode;
   if (summary.current_mode) {
-    //TODO: Create element if it doesn't exist.
     currentElapsedElem.textContent = summary.current_elapsed;
   } else {
-    //TODO: Delete element if it exists.
+    currentElapsedElem.textContent = "";
   }
 }
 
