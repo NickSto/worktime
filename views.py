@@ -91,11 +91,11 @@ def switchera(request):
     return HttpResponseRedirect(reverse('worktime_main'))
   params = QueryParams()
   params.add('era', type=int)
-  params.add('newEra')
+  params.add('new-era')
   params.parse(request.POST)
   work_times = WorkTimesDatabase()
-  if params['newEra']:
-    work_times.clear(params['newEra'])
+  if params['new-era']:
+    work_times.clear(params['new-era'])
   elif params['era'] is not None:
     work_times.switch_era(params['era'])
   return HttpResponseRedirect(reverse('worktime_main'))

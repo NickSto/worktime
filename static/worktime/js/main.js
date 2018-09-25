@@ -1,8 +1,8 @@
 function main() {
 
-  var currentModeElem = document.getElementById('currentMode');
-  var currentElapsedElem = document.getElementById('currentElapsed');
-  var totalsElem = document.getElementById('totalsTable');
+  var currentModeElem = document.getElementById('current-mode');
+  var currentElapsedElem = document.getElementById('current-elapsed');
+  var totalsElem = document.getElementById('totals-table');
   var historyTimespanElem = document.getElementById('history-timespan');
   var historyBarElem = document.getElementById('history-bar');
 
