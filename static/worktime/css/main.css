@@ -10,6 +10,32 @@
   }
 }
 
+#history .period {
+  height: 10px;
+  display: inline-block;
+}
+
+#history .period {
+  border-top: 1px #ccc solid;
+  border-bottom: 1px #ccc solid;
+}
+#history .period:first-child {
+  border-left: 1px #ccc solid;
+}
+#history .period:last-child {
+  border-right: 1px #ccc solid;
+}
+
+#history .period.mode-w {
+  background-color: #afa;
+}
+#history .period.mode-p {
+  background-color: #faa;
+}
+#history .period.mode-n {
+  background-color: #ddf;
+}
+
 #currentMode {
   margin-left: 10px;
   margin-right: 5px;

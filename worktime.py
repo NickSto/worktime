@@ -643,7 +643,7 @@ class WorkTimesDatabase(WorkTimes):
     now = int(time.time())
     cutoffs = [now-timespan for timespan in timespans]
     min_cutoff = min(cutoffs)
-    periods = Period.objects.filter(era=era, end__gte=min_cutoff)
+    periods = Period.objects.filter(era=era, end__gte=min_cutoff).order_by('start')
     try:
       current_period = Period.objects.get(era=era, end=None, next=None)
     except Period.DoesNotExist:

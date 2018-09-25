@@ -23,6 +23,15 @@
           </h3>
         </div>
         <div class="panel-body">
+          {% if history.periods %}
+            <section id="history">
+              <h4>History</h4>
+              <p>Past {{ history.timespan }}:</p>
+              <div id="history-bar">
+                {% for period in history.periods %}<span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%"></span>{% endfor %}
+              </div>
+            </section>
+          {% endif %}
           <section id="stats" class="pull-right">
             <div id="status">
               <h4>
@@ -35,7 +44,7 @@
                   {% endif %}
                 </strong>
                 <span id="currentElapsed">
-                  {% if current_mode %}
+                  {% if current_mode != "None" %}
                     {{ current_elapsed }}
                   {% endif %}
                 </span>
