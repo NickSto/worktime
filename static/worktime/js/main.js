@@ -106,11 +106,16 @@ function applyHistory(summary, historyTimespanElem, historyBarElem) {
   removeChildren(historyBarElem);
   for (var i = 0; i < summary.history.periods.length; i++) {
     var period = summary.history.periods[i];
+    if (period.mode === null) {
+      var mode = 'None';
+    } else {
+      var mode = period.mode;
+    }
     var periodElem = document.createElement('span');
     periodElem.classList.add('period');
-    periodElem.classList.add('mode-'+period.mode);
+    periodElem.classList.add('mode-'+mode);
     periodElem.style.width = period.width+"%";
-    periodElem.setAttribute('title', period.mode+" "+period.timespan);
+    periodElem.setAttribute('title', mode+" "+period.timespan);
     historyBarElem.appendChild(periodElem);
   }
 }

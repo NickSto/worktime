@@ -26,6 +26,9 @@
   border-right: 1px #ccc solid;
 }
 
+#history .period {
+  background-color: #eee;
+}
 #history .period.mode-w {
   background-color: #afa;
 }
@@ -34,6 +37,9 @@
 }
 #history .period.mode-n {
   background-color: #ddf;
+}
+#history .period.mode-s, #history .period.mode-None, #history .period.mode-null {
+  background-color: unset;
 }
 
 #current-mode {
