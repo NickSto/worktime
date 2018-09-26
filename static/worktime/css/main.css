@@ -1,15 +1,21 @@
 
-.panel-body > section {
+.shrink-wrap {
+  display: inline-block;
+  width: auto;
+}
+
+#main-display {
+  max-width: 800px;
+}
+
+.worktime-section {
   padding: 10px 20px 20px 20px;
 }
 
 /* When the screen is too small, stop the floats and go to one vertical column. */
 @media (max-width: 615px) {
-  .panel-body > section {
+  .worktime-section {
     float: none !important;
-  }
-  .panel-body > section#connection {
-    float: right !important;
   }
 }
 
