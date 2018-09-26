@@ -9,7 +9,7 @@ function main() {
   var historyBarElem = document.getElementById('history-bar');
   var connectionElem = document.getElementById('connection-status');
 
-  var lastUpdate = Date.now();
+  var lastUpdate = Date.now()/1000;
   connectionElem.textContent = "Current";
   connectionElem.style.backgroundColor = "rgba(200, 255, 200, 1)";
 
@@ -21,24 +21,24 @@ function main() {
       applyStatus(summary, currentModeElem, currentElapsedElem);
       applyTotals(summary, totalsElem);
       applyHistory(summary, historyTimespanElem, historyBarElem);
-      lastUpdate = Date.now();
+      lastUpdate = Date.now()/1000;
     }
   }
 
   function updateConnection() {
-    var now = Date.now();
+    var now = Date.now()/1000;
     var age = now - lastUpdate;
     /* Set the age text. */
     var humanAge = humanTime(age);
     var content = humanAge+" ago";
-    if (age < 60*1000) {
+    if (age < 60) {
       connectionElem.style.color = "initial";
     } else {
       content += "!";
       connectionElem.style.color = "red";
     }
     connectionElem.textContent = content;
-    var bgOpacity = Math.max((7-age/1000)/7, 0);
+    var bgOpacity = Math.max((7-age)/7, 0);
     connectionElem.style.backgroundColor = "rgba(200, 255, 200, "+bgOpacity+")";
     /* Fade out the status info as it gets out of date. */
     var opacity = getOpacity(age);
@@ -158,7 +158,7 @@ function removeChildren(element) {
   }
 }
 
-function getOpacity(milliseconds) {
+function getOpacity(seconds) {
   /* This is tuned so that anything under 1 minute gives an opacity of 1, and it decreases from
    * there, at a slower rate as the time increases. The minimum it ever returns is 0.1, which
    * occurs around 1 hour 45 minutes. Examples:
@@ -166,15 +166,15 @@ function getOpacity(milliseconds) {
    * 15 minutes: 0.41
    * 1 hour:     0.19
    */
-  var rawOpacity = 11.0021/Math.log(milliseconds);
+  var rawOpacity = 11.0021/Math.log(seconds*1000);
   var transparency = 3 * (1 - rawOpacity);
   var opacity = 1 - transparency;
   var opacityRounded = Math.round(opacity*100)/100;
   return Math.max(0.1, Math.min(1, opacityRounded));
 }
 
-function humanTime(milliseconds) {
-  var seconds = Math.round(milliseconds/1000);
+function humanTime(seconds) {
+  seconds = Math.round(seconds);
   if (seconds < 60) {
     return formatTime(seconds, 'second');
   } else if (seconds < 60*60) {
