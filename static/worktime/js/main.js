@@ -11,6 +11,7 @@ function main() {
 
   var lastUpdate = Date.now();
   connectionElem.textContent = "Current";
+  connectionElem.style.backgroundColor = "rgba(200, 255, 200, 1)";
 
   function applySummary() {
     // Insert the new data into the page.
@@ -37,6 +38,8 @@ function main() {
       connectionElem.style.color = "red";
     }
     connectionElem.textContent = content;
+    var bgOpacity = Math.max((7-age/1000)/7, 0);
+    connectionElem.style.backgroundColor = "rgba(200, 255, 200, "+bgOpacity+")";
     /* Fade out the status info as it gets out of date. */
     var opacity = getOpacity(age);
     statsElem.style.opacity = opacity;
