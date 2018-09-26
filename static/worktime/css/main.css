@@ -8,6 +8,9 @@
   .panel-body > section {
     float: none !important;
   }
+  .panel-body > section#connection {
+    float: right !important;
+  }
 }
 
 #history .period {
