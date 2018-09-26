@@ -11,7 +11,7 @@ function main() {
 
   var lastUpdate = Date.now()/1000;
   connectionElem.textContent = "Current";
-  connectionElem.style.backgroundColor = "rgba(200, 255, 200, 1)";
+  flashGreen(connectionElem);
 
   function applySummary() {
     // Insert the new data into the page.
@@ -38,8 +38,9 @@ function main() {
       connectionElem.style.color = "red";
     }
     connectionElem.textContent = content;
-    var bgOpacity = Math.max((7-age)/7, 0);
-    connectionElem.style.backgroundColor = "rgba(200, 255, 200, "+bgOpacity+")";
+    if (age <= 1) {
+      flashGreen(connectionElem);
+    }
     /* Fade out the status info as it gets out of date. */
     var opacity = getOpacity(age);
     statsElem.style.opacity = opacity;
@@ -171,6 +172,23 @@ function getOpacity(seconds) {
   var opacity = 1 - transparency;
   var opacityRounded = Math.round(opacity*100)/100;
   return Math.max(0.1, Math.min(1, opacityRounded));
+}
+
+function flashGreen(element, delay) {
+  /* Highlight an element with a green background that quickly fades out. */
+  if (delay === undefined) {
+    delay = 50;
+  }
+  var startTime = Date.now() + delay;
+  function updateGreen() {
+    var age = Date.now() - startTime;
+    var bgOpacity = Math.max((3000-age)/3000, 0);
+    element.style.backgroundColor = "rgba(200, 255, 200, "+bgOpacity+")";
+    if (bgOpacity > 0) {
+      window.setTimeout(updateGreen, 50);
+    }
+  }
+  window.setTimeout(updateGreen, delay);
 }
 
 function humanTime(seconds) {
