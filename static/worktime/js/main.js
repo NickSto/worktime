@@ -3,8 +3,14 @@ function main() {
   var currentModeElem = document.getElementById('current-mode');
   var currentElapsedElem = document.getElementById('current-elapsed');
   var totalsElem = document.getElementById('totals-table');
+  var statsElem = document.getElementById('stats');
+  var historyElem = document.getElementById('history');
   var historyTimespanElem = document.getElementById('history-timespan');
   var historyBarElem = document.getElementById('history-bar');
+  var connectionElem = document.getElementById('connection-status');
+
+  var lastUpdate = Date.now();
+  connectionElem.textContent = "Current";
 
   function applySummary() {
     // Insert the new data into the page.
@@ -14,7 +20,29 @@ function main() {
       applyStatus(summary, currentModeElem, currentElapsedElem);
       applyTotals(summary, totalsElem);
       applyHistory(summary, historyTimespanElem, historyBarElem);
+      lastUpdate = Date.now();
     }
+  }
+
+  function updateConnection() {
+    var now = Date.now();
+    var age = now - lastUpdate;
+    /* Set the age text. */
+    var humanAge = humanTime(age);
+    var content = humanAge+" ago";
+    if (age < 60*1000) {
+      connectionElem.style.color = "initial";
+    } else {
+      content += "!";
+      connectionElem.style.color = "red";
+    }
+    connectionElem.textContent = content;
+    /* Fade out the status info as it gets out of date. */
+    var opacity = getOpacity(age);
+    statsElem.style.opacity = opacity;
+    historyElem.style.opacity = opacity;
+    //TODO: Could add a bar to the history display representing the unknown period since the last
+    //      update. Color it something weird like purple.
   }
 
   function updateSummary() {
@@ -31,6 +59,7 @@ function main() {
   }
 
   window.setInterval(updateSummary, 30*1000);
+  window.setInterval(updateConnection, 1*1000);
   document.addEventListener('visibilitychange', visibilityHandler, false);
 }
 
@@ -124,6 +153,55 @@ function removeChildren(element) {
   while (element.childNodes.length > 0) {
     element.removeChild(element.childNodes[0]);
   }
+}
+
+function getOpacity(milliseconds) {
+  /* This is tuned so that anything under 1 minute gives an opacity of 1, and it decreases from
+   * there, at a slower rate as the time increases. The minimum it ever returns is 0.1, which
+   * occurs around 1 hour 45 minutes. Examples:
+   * 5 minutes:  0.62
+   * 15 minutes: 0.41
+   * 1 hour:     0.19
+   */
+  var rawOpacity = 11.0021/Math.log(milliseconds);
+  var transparency = 3 * (1 - rawOpacity);
+  var opacity = 1 - transparency;
+  var opacityRounded = Math.round(opacity*100)/100;
+  return Math.max(0.1, Math.min(1, opacityRounded));
+}
+
+function humanTime(milliseconds) {
+  var seconds = Math.round(milliseconds/1000);
+  if (seconds < 60) {
+    return formatTime(seconds, 'second');
+  } else if (seconds < 60*60) {
+    return formatTime(seconds/60, 'minute');
+  } else if (seconds < 24*60*60) {
+    return formatTime(seconds/60/60, 'hour');
+  } else if (seconds < 10*24*60*60) {
+    return formatTime(seconds/60/60/24, 'day');
+  } else if (seconds < 40*24*60*60) {
+    return formatTime(seconds/60/60/24/7, 'week');
+  } else if (seconds < 365*24*60*60) {
+    return formatTime(seconds/60/60/24/30.5, 'month');
+  } else {
+    return formatTime(seconds/60/60/24/365, 'year');
+  }
+}
+
+function formatTime(quantity, unit) {
+  if (quantity < 10) {
+    // Round to 1 decimal place if less than 10.
+    var rounded = Math.round(quantity*10)/10;
+  } else {
+    // Round to a whole number if more than 10.
+    var rounded = Math.round(quantity);
+  }
+  var output = rounded + ' ' + unit;
+  if (rounded !== 1) {
+    output += 's';
+  }
+  return output;
 }
 
 window.addEventListener('load', main, false);
