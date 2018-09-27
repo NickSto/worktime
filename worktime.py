@@ -768,7 +768,7 @@ class WorkTimesDatabase(WorkTimes):
       last_end = end
       width = round(total_width * elapsed / timespan, 1)
       bar_periods.append({'mode':period.mode, 'width':width, 'start':period.start,
-                          'timespan':format_timespan(elapsed, numbers), 'end':end})
+                          'timespan':format_timespan(period.elapsed, numbers), 'end':end})
       logging.info('Found {} {} sec long ({}%): {} to {}'
                    .format(period.mode, period.elapsed, width, period.start, period.end))
     # Fill in empty gaps at start or end of timespan with empty bars.
