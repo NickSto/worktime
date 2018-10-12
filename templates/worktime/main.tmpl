@@ -12,6 +12,17 @@
 
       <h2 id="title">Worktime</h2>
 
+      {% if not authorized %}
+        <section id="warning" class="panel panel-shrink">
+          <div class="panel-heading">
+            <h4>Warning</h4>
+          </div>
+          <div class="panel-body">
+            Only authorized users can perform the actions below.
+          </div>
+        </section>
+      {% endif %}
+
       <section id="main-display" class="panel panel-default">
         <div class="panel-heading">
           <h3>
@@ -42,7 +53,7 @@
             <section id="stats" class="worktime-section pull-right">
               <div id="status">
                 <h4>
-                  Current status:
+                  Current mode:
                   <strong id="current-mode">
                     {% if current_mode %}
                       {{ current_mode }}
