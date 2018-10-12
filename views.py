@@ -6,11 +6,24 @@ from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Era, Period
+from .models import Era, Period, AuthorizedCookie
 from .worktime import WorkTimesDatabase, timestring
 from utils import QueryParams, boolish
 log = logging.getLogger(__name__)
+
 HISTORY_BAR_TIMESPAN = 2*60*60
+COOKIE_NAME = 'visitors_v1'
+
+
+def require_post_and_authorization(view):
+  def wrapper(request):
+    if request.method != 'POST':
+      log.warning('Wrong method.')
+      return HttpResponseRedirect(reverse('worktime_main'))
+    if not is_authorized(request):
+      return HttpResponseRedirect(reverse('worktime_main'))
+    return view(request)
+  return wrapper
 
 
 ##### Views #####
@@ -32,6 +45,7 @@ def main(request):
       era_dict['name'] = str(era.id)
     summary['eras'].append(era_dict)
   if params['format'] == 'html':
+    summary['authorized'] = is_authorized(request)
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':
     return HttpResponse(json.dumps(summary), content_type='application/json')
@@ -45,10 +59,8 @@ def main(request):
     return HttpResponse('\n'.join(lines), content_type=settings.PLAINTEXT)
 
 @csrf_exempt
+@require_post_and_authorization
 def switch(request):
-  if request.method != 'POST':
-    log.warning('Wrong method.')
-    return HttpResponseRedirect(reverse('worktime_main'))
   work_times = WorkTimesDatabase()
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
@@ -60,10 +72,8 @@ def switch(request):
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @csrf_exempt
+@require_post_and_authorization
 def adjust(request):
-  if request.method != 'POST':
-    log.warning('Wrong method.')
-    return HttpResponseRedirect(reverse('worktime_main'))
   work_times = WorkTimesDatabase()
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
@@ -85,10 +95,8 @@ def adjust(request):
   work_times.add_elapsed(params['mode'], delta*60)
   return HttpResponseRedirect(reverse('worktime_main'))
 
+@require_post_and_authorization
 def switchera(request):
-  if request.method != 'POST':
-    log.warning('Wrong method.')
-    return HttpResponseRedirect(reverse('worktime_main'))
   params = QueryParams()
   params.add('era', type=int)
   params.add('new-era')
@@ -101,10 +109,21 @@ def switchera(request):
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @csrf_exempt
+@require_post_and_authorization
 def clear(request):
-  if request.method != 'POST':
-    log.warning('Wrong method.')
-    return HttpResponseRedirect(reverse('worktime_main'))
   work_times = WorkTimesDatabase()
   work_times.clear()
   return HttpResponseRedirect(reverse('worktime_main'))
+
+
+##### Helper functions #####
+
+def is_authorized(request):
+  cookie_value = request.COOKIES.get(COOKIE_NAME)
+  try:
+    authorized_cookie = AuthorizedCookie.objects.get(name=COOKIE_NAME, value=cookie_value)
+  except AuthorizedCookie.DoesNotExist:
+    log.warning('Unauthorized visitor (cookie {}={}).'.format(COOKIE_NAME, cookie_value))
+    return False
+  if authorized_cookie:
+    return True

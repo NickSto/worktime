@@ -35,3 +35,11 @@ class Total(ModelMixin, models.Model):
   mode = models.CharField(max_length=MODE_MAX_LEN)
   elapsed = models.IntegerField(default=0)
   era = models.ForeignKey(Era, models.SET_NULL, null=True, blank=True)
+
+class AuthorizedCookie(ModelMixin, models.Model):
+  name = models.CharField(max_length=128)
+  value = models.CharField(max_length=128)
+  def __str__(self):
+    return self.value
+  def __repr__(self):
+    return '{}(name={!r}, value={!r})'.format(type(self).__name__, self.name, self.value)
