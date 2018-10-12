@@ -23,6 +23,7 @@ DATA_DIR     = pathlib.Path('~/.local/share/nbsdata').expanduser()
 LOG_PATH     = DATA_DIR / 'worklog.txt'
 STATUS_PATH  = DATA_DIR / 'workstatus.txt'
 API_ENDPOINT = 'https://nstoler.com/worktime'
+COOKIE_NAME  = 'visitors_v1'
 TIMEOUT = 5
 USER_AGENT = 'worktime/0.1'
 
@@ -54,6 +55,8 @@ def make_argparser():
     help='Don\'t print feedback to stdout.')
   parser.add_argument('-w', '--web', action='store_true',
     help='Use the website ({}) as the history log instead of local files.'.format(API_ENDPOINT))
+  parser.add_argument('-c', '--cookie',
+    help='Authorization cookie to use when in --web mode.')
   parser.add_argument('-u', '--url', default=API_ENDPOINT,
     help='An alternative url to use as the website API endpoint. Implies --web.')
   parser.add_argument('-k', '--skip-cert-verification', dest='verify', action='store_false',
@@ -77,8 +80,8 @@ def main(argv):
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
   if args.web or args.url != API_ENDPOINT:
-    work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN,
-                              api_endpoint=args.url, timeout=TIMEOUT, verify=args.verify)
+    work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN, api_endpoint=args.url,
+                              timeout=TIMEOUT, verify=args.verify, cookie=args.cookie)
   else:
     work_times = WorkTimesFiles(modes=MODES, hidden=HIDDEN,
                                 log_path=LOG_PATH, status_path=STATUS_PATH)
@@ -692,8 +695,9 @@ class WorkTimesDatabase(WorkTimes):
       for i in 0, 1:
         for c, cutoff in enumerate(cutoffs):
           if adjustment.timestamp >= cutoff and adjustment.mode == modes[i]:
-            # Expand the adjustment backward into a "virtual period" as `delta` long, ending when
-            # the adjustment was made. Then, only count the part of the adjustment before the period.
+            # Expand the adjustment backward into a "virtual period" `delta` long, ending when
+            # the adjustment was made. Then, only count the part of this "virtual period" that's
+            # after the cutoff.
             time_btwn_adj_and_cutoff = adjustment.timestamp - cutoff
             if abs(adjustment.delta) > time_btwn_adj_and_cutoff:
               sign = int(adjustment.delta / abs(adjustment.delta))
@@ -799,11 +803,12 @@ class WorkTimesDatabase(WorkTimes):
 class WorkTimesWeb(WorkTimes):
 
   def __init__(self, modes=MODES, hidden=HIDDEN,
-               api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True):
+               api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True, cookie=None):
     super().__init__(modes=modes, hidden=hidden)
     self.api_endpoint = api_endpoint
     self.timeout = timeout
     self.verify = verify
+    self.cookie = cookie
 
   #TODO: Finish implementing rest of the methods.
 
@@ -855,6 +860,8 @@ class WorkTimesWeb(WorkTimes):
       kwargs['headers'] = {'User-Agent':USER_AGENT}
     if not self.verify:
       kwargs['verify'] = False
+    if self.cookie:
+      kwargs['cookies'] = {COOKIE_NAME:self.cookie}
     try:
       if method == 'get':
         response = requests.get(self.api_endpoint+url_end, **kwargs)
