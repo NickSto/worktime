@@ -54,17 +54,19 @@
               <div id="status">
                 <h4>
                   Current mode:
-                  <strong id="current-mode">
-                    {% if current_mode %}
-                      {{ current_mode }}
-                    {% else %}
-                      None
-                    {% endif %}
-                  </strong>
-                  <span id="current-elapsed">
-                    {% if current_mode != "None" %}
-                      {{ current_elapsed }}
-                    {% endif %}
+                  <span id="mode-time" class="mode-{{ current_mode }}">
+                    <strong id="current-mode">
+                      {% if current_mode %}
+                        {{ current_mode }}
+                      {% else %}
+                        None
+                      {% endif %}
+                    </strong>
+                    <span id="current-elapsed">
+                      {% if current_mode != "None" %}
+                        {{ current_elapsed }}
+                      {% endif %}
+                    </span>
                   </span>
                 </h4>
               </div>

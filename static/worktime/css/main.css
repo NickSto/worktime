@@ -53,24 +53,27 @@
   border-right: 1px #ccc solid;
 }
 
-#history .period {
-  background-color: #eee;
-}
-#history .period.mode-w {
+.mode-w {
   background-color: #afa;
 }
-#history .period.mode-p {
+.mode-p {
   background-color: #faa;
 }
-#history .period.mode-n {
+.mode-n {
   background-color: #ddf;
 }
-#history .period.mode-s, #history .period.mode-None, #history .period.mode-null {
+.mode-s, .mode-None, .mode-null {
   background-color: unset;
 }
 
+#mode-time {
+  margin-left: 5px;
+  padding: 5px 10px 6px 5px;
+  border-radius: 4px;
+}
+
 #current-mode {
-  margin-left: 10px;
+  margin-left: 5px;
   margin-right: 5px;
 }
 

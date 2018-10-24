@@ -1,5 +1,6 @@
 function main() {
 
+  var modeTimeElem = document.getElementById('mode-time');
   var currentModeElem = document.getElementById('current-mode');
   var currentElapsedElem = document.getElementById('current-elapsed');
   var totalsElem = document.getElementById('totals-table');
@@ -18,7 +19,7 @@ function main() {
     // Called once the XMLHttpRequest has gotten a response.
     var summary = this.response;
     if (summary) {
-      applyStatus(summary, currentModeElem, currentElapsedElem);
+      applyStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem);
       applyTotals(summary, totalsElem);
       applyHistory(summary, historyTimespanElem, historyBarElem);
       lastUpdate = Date.now()/1000;
@@ -75,7 +76,8 @@ function makeRequest(method, callback, url) {
   request.send();
 }
 
-function applyStatus(summary, currentModeElem, currentElapsedElem) {
+function applyStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem) {
+  modeTimeElem.className = "mode-"+summary.current_mode;
   currentModeElem.textContent = summary.current_mode;
   if (summary.current_mode) {
     currentElapsedElem.textContent = summary.current_elapsed;
