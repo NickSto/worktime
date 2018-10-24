@@ -53,11 +53,21 @@
   border-right: 1px #ccc solid;
 }
 
-.mode-w {
+#history .mode-w {
   background-color: #afa;
 }
-.mode-p {
+#history .mode-p {
   background-color: #faa;
+}
+#history .mode-n {
+  background-color: #ddf;
+}
+
+.mode-w {
+  background-color: #cfc;
+}
+.mode-p {
+  background-color: #fcc;
 }
 .mode-n {
   background-color: #ddf;
