@@ -21,6 +21,7 @@ def require_post_and_authorization(view):
       log.warning('Wrong method.')
       return HttpResponseRedirect(reverse('worktime_main'))
     if not is_authorized(request):
+      log.warning('Unauthorized visitor attempted action.')
       return HttpResponseRedirect(reverse('worktime_main'))
     return view(request)
   return wrapper
@@ -123,7 +124,6 @@ def is_authorized(request):
   try:
     authorized_cookie = AuthorizedCookie.objects.get(name=COOKIE_NAME, value=cookie_value)
   except AuthorizedCookie.DoesNotExist:
-    log.warning('Unauthorized visitor (cookie {}={}).'.format(COOKIE_NAME, cookie_value))
     return False
   if authorized_cookie:
     return True
