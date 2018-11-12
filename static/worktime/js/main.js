@@ -9,6 +9,7 @@ function main() {
   var historyTimespanElem = document.getElementById('history-timespan');
   var historyBarElem = document.getElementById('history-bar');
   var connectionElem = document.getElementById('connection-status');
+  var connectionWarningElem = document.getElementById('connection-warning');
 
   var lastUpdate = Date.now()/1000;
   connectionElem.textContent = "Current";
@@ -18,15 +19,23 @@ function main() {
     // Insert the new data into the page.
     // Called once the XMLHttpRequest has gotten a response.
     var summary = this.response;
-    if (summary) {
+    if (summary && summary.elapsed && summary.history) {
+      unwarn(connectionWarningElem);
       applyStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem);
       applyTotals(summary, totalsElem);
       applyHistory(summary, historyTimespanElem, historyBarElem);
       lastUpdate = Date.now()/1000;
       //TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
       //      Is `if (summary)` not properly detecting the failure?
+    } else if (summary) {
+      warn(connectionWarningElem, "Invalid summary object returned");
+    } else {
+      warn(connectionWarningElem, "No summary object returned");
     }
-    //TODO: Notify if the connection wasn't successful.
+  }
+
+  function connectionWarn(event) {
+    warn(connectionWarningElem, "Could not connect to server");
   }
 
   function updateConnection() {
@@ -58,7 +67,7 @@ function main() {
     // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
     // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
     if (!document.hidden) {
-      makeRequest('GET', applySummary, '/worktime?format=json&numbers=text&via=js');
+      makeRequest('GET', applySummary, '/worktime?format=json&numbers=text&via=js', connectionWarn);
     }
   }
 
@@ -72,10 +81,13 @@ function main() {
   document.addEventListener('visibilitychange', visibilityHandler, false);
 }
 
-function makeRequest(method, callback, url) {
+function makeRequest(method, callback, url, errorCallback) {
   var request = new XMLHttpRequest();
   request.responseType = 'json';
   request.addEventListener('load', callback, true);
+  if (errorCallback) {
+    request.addEventListener('error', errorCallback, true);
+  }
   request.open(method, url);
   request.send();
 }
@@ -272,6 +284,17 @@ function flashGreen(element, delay) {
  *      relative. That leaves an empty space where they originally were, but that should be good in
  *      this case. That vertical space is where the track will go.
  */
+
+function warn(warningElem, warning) {
+  console.log(warning);
+  warningElem.textContent = warning;
+  warningElem.style.display = "initial";
+}
+
+function unwarn(warningElem) {
+  warningElem.textContent = "";
+  warningElem.style.display = "none";
+}
 
 function humanTime(seconds) {
   seconds = Math.round(seconds);

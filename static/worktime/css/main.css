@@ -44,6 +44,14 @@
 #connection-status {
   padding: 5px 10px;
   border-radius: 5px;
+  text-align: right;
+}
+
+#connection-warning {
+  padding: 5px 10px;
+  border-radius: 5px;
+  background-color: #fcc;
+  display: none;
 }
 
 #history-bar .popup {
