@@ -60,7 +60,7 @@
   border-top: 1px #ccc solid;
   border-bottom: 1px #ccc solid;
 }
-#history .period:first-child {
+#history .period[data-index="0"] {
   border-left: 1px #ccc solid;
 }
 #history .period:last-child {
