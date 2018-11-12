@@ -220,8 +220,8 @@ function showPopup(event) {
     console.log("Error: Could not locate the correct popupElem.");
     return;
   }
-  popupElem.style.left = (event.clientX-25)+"px";
-  popupElem.style.top = (event.clientY-10)+"px";
+  popupElem.style.left = (event.clientX+window.scrollX-25)+"px";
+  popupElem.style.top = (event.clientY+window.scrollY-10)+"px";
   popupElem.style.opacity = 1;
   popupElem.style.display = "inline-block";
   fadeOut(popupElem, 5);
