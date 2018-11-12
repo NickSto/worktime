@@ -4,6 +4,15 @@
   width: auto;
 }
 
+.popup {
+  position: absolute;
+  display: inline-block;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 5px 8px 5px 8px;
+  background-color: #eee;
+}
+
 #warning {
   min-width: 400px;
   margin-left: calc(50% - 200px);
@@ -35,6 +44,11 @@
 #connection-status {
   padding: 5px 10px;
   border-radius: 5px;
+}
+
+#history-bar .popup {
+  display: none;
+  top: -2px;
 }
 
 #history .period {

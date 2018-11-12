@@ -23,7 +23,10 @@ function main() {
       applyTotals(summary, totalsElem);
       applyHistory(summary, historyTimespanElem, historyBarElem);
       lastUpdate = Date.now()/1000;
+      //TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
+      //      Is `if (summary)` not properly detecting the failure?
     }
+    //TODO: Notify if the connection wasn't successful.
   }
 
   function updateConnection() {
@@ -63,6 +66,7 @@ function main() {
     updateSummary();
   }
 
+  addPopupListeners(historyBarElem);
   window.setInterval(updateSummary, 30*1000);
   window.setInterval(updateConnection, 1*1000);
   document.addEventListener('visibilitychange', visibilityHandler, false);
@@ -139,6 +143,21 @@ function applyHistory(summary, historyTimespanElem, historyBarElem) {
   historyTimespanElem.textContent = "Past "+summary.history.timespan+":";
   /* Create the bar display. */
   removeChildren(historyBarElem);
+  // Make the popups.
+  for (var i = 0; i < summary.history.periods.length; i++) {
+    var period = summary.history.periods[i];
+    if (period.mode === null) {
+      var mode = 'None';
+    } else {
+      var mode = period.mode;
+    }
+    var popupElem = document.createElement('div');
+    popupElem.classList.add('popup');
+    popupElem.textContent = mode+" "+period.timespan;
+    popupElem.dataset.index = i;
+    historyBarElem.appendChild(popupElem);
+  }
+  // Make the period bars.
   for (var i = 0; i < summary.history.periods.length; i++) {
     var period = summary.history.periods[i];
     if (period.mode === null) {
@@ -150,7 +169,9 @@ function applyHistory(summary, historyTimespanElem, historyBarElem) {
     periodElem.classList.add('period');
     periodElem.classList.add('mode-'+mode);
     periodElem.style.width = period.width+"%";
+    periodElem.dataset.index = i;
     periodElem.setAttribute('title', mode+" "+period.timespan);
+    periodElem.addEventListener('click', showPopup, false);
     historyBarElem.appendChild(periodElem);
   }
 }
@@ -159,6 +180,59 @@ function removeChildren(element) {
   while (element.childNodes.length > 0) {
     element.removeChild(element.childNodes[0]);
   }
+}
+
+// This section is to show a popup with the length of the period when the user clicks on a period.
+// It's mainly for mobile, where the normal alt text doesn't show.
+
+function addPopupListeners(historyBarElem) {
+  for (var i = 0; i < historyBarElem.children.length; i++) {
+    var child = historyBarElem.children[i];
+    if (child.classList.contains("period")) {
+      child.addEventListener("click", showPopup);
+    }
+  }
+}
+
+function showPopup(event) {
+  var index = event.target.dataset.index;
+  var historyBarElem = event.target.parentElement;
+  var popupElem = null;
+  for (var i = 0; i < historyBarElem.children.length; i++) {
+    var child = historyBarElem.children[i];
+    if (child.classList.contains("popup") && child.dataset.index === index) {
+      popupElem = child;
+    }
+  }
+  if (popupElem === null) {
+    console.log("Error: Could not locate the correct popupElem.");
+    return;
+  }
+  popupElem.style.left = (event.clientX-25)+"px";
+  popupElem.style.top = (event.clientY-10)+"px";
+  popupElem.style.opacity = 1;
+  popupElem.style.display = "inline-block";
+  fadeOut(popupElem, 5);
+}
+
+function fadeOut(element, timespan) {
+  var start = Date.now()/1000;
+  element.dataset.fadeStart = start;
+  function updateFade() {
+    if (element.dataset.fadeStart !== ""+start) {
+      return;
+    }
+    var now = Date.now()/1000;
+    var elapsed = now-start;
+    if (elapsed >= timespan) {
+      element.style.opacity = 1;
+      element.style.display = "none";
+    } else {
+      element.style.opacity = 1 - elapsed/timespan;
+      window.setTimeout(updateFade, 50);
+    }
+  }
+  updateFade();
 }
 
 function getOpacity(seconds) {
@@ -192,6 +266,12 @@ function flashGreen(element, delay) {
   }
   window.setTimeout(updateGreen, delay);
 }
+
+/*TODO: Add track above the period bar to display adjustments.
+ *      You could have a list of <span>s, like with the popups, but you can set their `position` to
+ *      relative. That leaves an empty space where they originally were, but that should be good in
+ *      this case. That vertical space is where the track will go.
+ */
 
 function humanTime(seconds) {
   seconds = Math.round(seconds);
