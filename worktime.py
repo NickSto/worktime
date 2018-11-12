@@ -641,7 +641,6 @@ class WorkTimesDatabase(WorkTimes):
     return data
 
   def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
-    """Augment the default summary with a ratio for just the last `ratio` seconds."""
     summary = super().get_summary(numbers=numbers, modes=modes)
     try:
       era = Era.objects.get(current=True)
@@ -654,6 +653,8 @@ class WorkTimesDatabase(WorkTimes):
       timespan = list(sorted(timespans))[0]
       summary['history'] = {}
       summary['history']['periods'] = self._get_recent_bars(timespan, numbers=numbers, era=era)
+      summary['history']['adjustments'] = self._get_recent_adjustments(timespan, numbers=numbers,
+                                                                       era=era)
       if numbers == 'values':
         summary['history']['timespan'] = timespan
       elif numbers == 'text':
@@ -798,6 +799,30 @@ class WorkTimesDatabase(WorkTimes):
       diff = min(0.3, total_width - total_width)
       bar_periods[-1]['width'] = round(bar_periods[-1]['width']+diff, 1)
     return bar_periods
+
+  def _get_recent_adjustments(self, timespan, numbers='values', era=None, total_width=99):
+    """Get data for a display of recent adjustments."""
+    adjustments_data = []
+    # Get current Era.
+    if era is None:
+      try:
+        era = Era.objects.get(current=True)
+      except Era.DoesNotExist:
+        return adjustments_data
+    # Get a list of adjustments in the last `timespan` seconds.
+    now = int(time.time())
+    cutoff = now - timespan
+    adjustments = Adjustment.objects.filter(era=era, timestamp__gte=cutoff).order_by('timestamp')
+    logging.info('Found {} adjustments in last {}.'.format(len(adjustments), timespan))
+    for adjustment in adjustments:
+      if adjustment.delta >= 0:
+        sign = '+'
+      else:
+        sign = '-'
+      x = round(total_width * (adjustment.timestamp-cutoff) / timespan, 1)
+      magnitude = format_timespan(abs(adjustment.delta), numbers)
+      adjustments_data.append({'mode':adjustment.mode, 'sign':sign, 'magnitude':magnitude, 'x':x})
+    return adjustments_data
 
 
 class WorkTimesWeb(WorkTimes):
