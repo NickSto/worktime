@@ -42,20 +42,18 @@
             <section id="history" class="worktime-section">
               <h4>History</h4>
               <p id="history-timespan">Past {{ history.timespan }}:</p>
-              {% if history.adjustments %}
-                <div id="adjustments-bar">
-                  {% for adjustment in history.adjustments %}
-                    <span class="adjustment mode-{{ adjustment.mode }}" style="left: {{ adjustment.x }}%">
-                      {{ adjustment.mode }} {{ adjustment.sign }}{{ adjustment.magnitude }}
-                    </span>
-                  {% endfor %}
-                </div>
-                <div id="adjustment-lines-bar">
-                  {% for adjustment in history.adjustments %}
-                    <span class="adjustment-line" style="left: {{ adjustment.x }}%"></span>
-                  {% endfor %}
-                </div>
-              {% endif %}
+              <div id="adjustments-bar">
+                {% for adjustment in history.adjustments %}
+                  <span class="adjustment mode-{{ adjustment.mode }}" style="left: {{ adjustment.x }}%">
+                    {{ adjustment.mode }} {{ adjustment.sign }}{{ adjustment.magnitude }}
+                  </span>
+                {% endfor %}
+              </div>
+              <div id="adjustment-lines-bar">
+                {% for adjustment in history.adjustments %}
+                  <span class="adjustment-line" style="left: {{ adjustment.x }}%"></span>
+                {% endfor %}
+              </div>
               <div id="history-bar">
                 {% for period in history.periods %}
                   <div class="popup" data-index="{{ forloop.counter0 }}">
