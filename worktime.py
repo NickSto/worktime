@@ -170,6 +170,13 @@ def make_report(summary, message=None):
   return title, body
 
 
+def format_timespan(seconds, numbers, label_smallest=True):
+  if numbers == 'values':
+    return seconds
+  elif numbers == 'text':
+    return timestring(seconds, label_smallest=label_smallest)
+
+
 def timestring(sec_total, format='HH:MM', abbrev=True, label_smallest=False):
   if format == 'HH:MM':
     return timestring_hhmm(sec_total, abbrev=abbrev, label_smallest=label_smallest)
@@ -196,13 +203,6 @@ def timestring_hhmm(sec_total, abbrev=True, label_smallest=False):
         return '{} minutes'.format(minutes)
     else:
       return str(minutes)
-
-
-def format_timespan(seconds, numbers):
-  if numbers == 'values':
-    return seconds
-  elif numbers == 'text':
-    return timestring(seconds, label_smallest=True)
 
 
 def timestring_even(sec_total, abbrev=True):
@@ -820,7 +820,7 @@ class WorkTimesDatabase(WorkTimes):
       else:
         sign = '-'
       x = round(total_width * (adjustment.timestamp-cutoff) / timespan, 1)
-      magnitude = format_timespan(abs(adjustment.delta), numbers)
+      magnitude = format_timespan(abs(adjustment.delta), numbers, label_smallest=False)
       adjustments_data.append({'mode':adjustment.mode, 'sign':sign, 'magnitude':magnitude, 'x':x})
     return adjustments_data
 
