@@ -310,16 +310,8 @@ function flashGreen(element, delay) {
 }
 
 function arrangeAdjustments(adjustmentsBarElem) {
-  // Gather geometry data. All dimensions are stored in pixels.
   var totalWidth = adjustmentsBarElem.offsetWidth;
-  var adjustments = [];
-  for (var i = 0; i < adjustmentsBarElem.children.length; i++) {
-    var adjustmentElem = adjustmentsBarElem.children[i];
-    var idealPosition = totalWidth * parseFloat(adjustmentElem.style.left) / 100;
-    adjustments[i] = {elem:adjustmentElem, idealPosition:idealPosition, currentLeft:idealPosition,
-                  width:getNaturalWidth(adjustmentElem)};
-    logGeometry(adjustments[i]);
-  }
+  var adjustments = gatherAdjustmentsData(adjustmentsBarElem, totalWidth);
   // Center the boxes over their time points.
   // console.log("Centering boxes..");
   for (var i = 0; i < adjustments.length; i++) {
@@ -351,6 +343,7 @@ function arrangeAdjustments(adjustmentsBarElem) {
       overlapping = true;
       shiftOverlapRuns(overlapRuns, totalWidth);
     } else {
+      // console.log("No overlaps found!");
       overlapping = false;
     }
     tries++;
@@ -363,8 +356,20 @@ function arrangeAdjustments(adjustmentsBarElem) {
     var adjustment = adjustments[i];
     var leftPct = Math.round(10 * 100 * adjustment.currentLeft / totalWidth) / 10;
     adjustment.elem.style.left = leftPct + "%";
-    // console.log("Translated "+adjustment.currentLeft+"px into "+leftPct+"%");
   }
+}
+
+// Gather geometry data. All dimensions are stored in pixels.
+function gatherAdjustmentsData(adjustmentsBarElem, totalWidth) {
+  var adjustments = [];
+  for (var i = 0; i < adjustmentsBarElem.children.length; i++) {
+    var adjustmentElem = adjustmentsBarElem.children[i];
+    var idealPosition = totalWidth * parseFloat(adjustmentElem.style.left) / 100;
+    adjustments[i] = {elem:adjustmentElem, idealPosition:idealPosition, currentLeft:idealPosition,
+                  width:getNaturalWidth(adjustmentElem)};
+    // logGeometry(adjustments[i]);
+  }
+  return adjustments;
 }
 
 // Kludge to get the width of the element without text wrapping.
@@ -403,6 +408,9 @@ function getOverlapRuns(adjustments) {
       }
       currentRun = [];
     }
+  }
+  if (currentRun.length > 0) {
+    overlapRuns.push(currentRun);
   }
   return overlapRuns;
 }
@@ -461,9 +469,9 @@ function shiftOverlapRuns(overlapRuns, totalWidth) {
       //             "Resetting to "+(totalWidth-rightAdjustment.width)+".");
       rightAdjustment.currentLeft = totalWidth - rightAdjustment.width;
     }
-    for (var j = 0; j < overlapRun.length; j++) {
-      logGeometry(overlapRun[j]);
-    }
+    // for (var j = 0; j < overlapRun.length; j++) {
+    //   logGeometry(overlapRun[j]);
+    // }
   }
 }
 
