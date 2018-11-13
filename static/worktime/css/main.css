@@ -54,6 +54,29 @@
   display: none;
 }
 
+#adjustments-bar {
+  position: relative;
+  height: 30px;
+}
+
+#adjustment-lines-bar {
+  position: relative;
+  height: 15px;
+}
+
+#adjustments-bar .adjustment {
+  position: absolute;
+  border-radius: 3px;
+  padding: 5px 8px 5px 8px;
+  font-size: 90%;
+}
+
+#adjustment-lines-bar .adjustment-line {
+  position: absolute;
+  border: solid 1px #ccc;
+  height: 15px;
+}
+
 #history-bar .popup {
   display: none;
   top: -2px;
