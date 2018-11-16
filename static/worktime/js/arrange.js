@@ -1,3 +1,43 @@
+/*TODO: New system that's more like a physics model of forces acting on objects.
+ *      It'll be divided into [X] phases:
+ *      1. Resolve overlaps.
+ *         Like I'm doing now, I'll first detect runs (blocks) of overlapping boxes.
+ *         Then I'll find the midpoint of each block. If it's an even number of boxes, just pick
+ *         either one of the middle two (doesn't matter much). And if the block overlaps one of the
+ *         edges, just call the edge the midpoint. The midpoint will be represented as an index in
+ *         the array holding the boxes in the block. If the midpoint is the edge, pick a midpoint of
+ *         -1 for the left edge, or the number of boxes for the right edge.
+ *         Then, I'll move through the block, shifting each box by its overlap distance. I'll move
+ *         it left if its i is < the midpoint, and right if its i is > the midpoint. If there are
+ *         blocks of more than 2 boxes, it'll take multiple passes to do this. Ideally, at the end,
+ *         boxes that were overlapping will be directly adjacent to each other (touching).
+ *         NOTE: I might need a sort step after each of these iterations to make sure the array is
+ *         still in the same order that the boxes are now laid out.
+ *         Actually, maybe I should just write something that'll shift a whole set of boxes by a
+ *         given amount. Then start at the center of the block and work outward, one box at a time.
+ *      2. Calculate restorative (anchor) forces.
+ *         Once the overlaps are resolved (or it runs out of tries), I'll go through all the boxes
+ *         and calculate how far each one is from its ideal position (anchor). I'll translate these
+ *         distances into forces acting to push the boxes toward their anchors.
+ *      3. Group into blocks of co-moving boxes.
+ *         Again I'll find runs of boxes that are touching (or overlap, if that wasn't fixed). But
+ *         this time, I'll take into account the anchor forces. Boxes will only be grouped into the
+ *         same block if they're both touching and their anchor forces are pushing them together.
+ *         If two touching boxes have forces in opposite directions, they'll be in different blocks.
+ *         Also, if one's force is toward the other, but the other's isn't, they'll only count as
+ *         the same block if the force pushing them together is greater than the one pushing them
+ *         apart.
+ *      4. Calculate the force on each block.
+ *         Once I have contiguous blocks, I'll sum up the anchor forces for each box in the block,
+ *         then divide by the number of boxes, and that'll be the force on the block.
+ *      5. Move the blocks.
+ *         Then, I guess I'll move each block by a number of pixels equal to (or proportional to?)
+ *         the force on it. And I can do some math checking how far each block is from the edge to
+ *         make sure it doesn't go past it. Maybe I can do the same for neighboring blocks, to keep
+ *         them from overlapping.
+ *      6. Rinse and repeat.
+ *         Then, I can repeat steps 2-5 until it reaches some sort of steady state.
+ */
 
 function arrangeAdjustments(adjustmentsBarElem) {
   var totalWidth = adjustmentsBarElem.offsetWidth;
