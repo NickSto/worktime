@@ -65,7 +65,10 @@ def switch(request):
   work_times = WorkTimesDatabase()
   params = QueryParams()
   params.add('mode', choices=work_times.modes)
+  params.add('site')
   params.parse(request.POST)
+  if params['site']:
+    return warn_and_redirect_spambot('switch', params['site'], reverse('worktime_main'))
   if params.invalid_value:
     log.warning('Invalid or missing mode {!r}.'.format(params.get('mode')))
     return HttpResponseRedirect(reverse('worktime_main'))
@@ -80,7 +83,10 @@ def adjust(request):
   params.add('mode', choices=work_times.modes)
   params.add('add', type=int)
   params.add('subtract', type=int)
+  params.add('site')
   params.parse(request.POST)
+  if params['site']:
+    return warn_and_redirect_spambot('adjust', params['site'], reverse('worktime_main'))
   if (not params['mode']
       or (params['add'] is None and params['subtract'] is None)
       or (params['add'] is not None and params['add'] < 0)
@@ -101,7 +107,10 @@ def switchera(request):
   params = QueryParams()
   params.add('era', type=int)
   params.add('new-era')
+  params.add('site')
   params.parse(request.POST)
+  if params['site']:
+    return warn_and_redirect_spambot('switchera', params['site'], reverse('worktime_main'))
   work_times = WorkTimesDatabase()
   if params['new-era']:
     work_times.clear(params['new-era'])
@@ -127,3 +136,16 @@ def is_authorized(request):
     return False
   if authorized_cookie:
     return True
+
+def warn_and_redirect_spambot(action, site, view_url=None):
+  site_trunc = truncate(site)
+  log.warning('Spambot blocked from worktime action {!r}. It entered "site" form value {!r}.'
+              .format(action, site_trunc))
+  if view_url is not None:
+    return HttpResponseRedirect(view_url)
+
+def truncate(s, max_len=100):
+  if s is not None and len(s) > max_len:
+    return s[:max_len]+'...'
+  else:
+    return s

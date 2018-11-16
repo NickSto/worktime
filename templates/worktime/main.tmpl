@@ -126,6 +126,7 @@
                     {{ mode }}
                   </button>
                 {% endfor %}
+                <input class="ruhuman" name="site" type="text">
               </form>
               <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
                 {% csrf_token %}
@@ -152,6 +153,7 @@
                 </p>
                 <p>
                   <input name="new-era" type="text">
+                  <input class="ruhuman" name="site" type="text">
                 </p>
                 <input class="btn btn-default" type="submit" value="Submit">
               </form>
@@ -177,6 +179,7 @@
                     </button>
                   {% endfor %}
                 </div>
+                <input class="ruhuman" name="site" type="text">
               </form>
             </section>
           </div>
