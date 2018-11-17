@@ -8,11 +8,18 @@ MODE_MAX_LEN = 63
 
 class User(ModelMixin, models.Model):
   name = models.CharField(max_length=255)
+  def __repr__(self):
+    return '{}(id={!r}, name={!r})'.format(type(self).__name__, self.id, self.name)
+  def __str__(self):
+    return self.name
 
 class Era(ModelMixin, models.Model):
   user = models.ForeignKey(User, models.SET_NULL, null=True, blank=True)
   description = models.CharField(max_length=255)
   current = models.BooleanField()
+  def __repr__(self):
+    return ('{}(user={!r}, current={!r}, description={!r})'
+            .format(type(self).__name__, self.user, self.current, self.description))
 
 class Period(ModelMixin, models.Model):
   mode = models.CharField(max_length=MODE_MAX_LEN, null=True, blank=True)
@@ -47,4 +54,5 @@ class Cookie(ModelMixin, models.Model):
   def __str__(self):
     return self.value
   def __repr__(self):
-    return '{}(name={!r}, value={!r})'.format(type(self).__name__, self.name, self.value)
+    return ('{}(user={!r}, name={!r}, value={!r})'
+            .format(type(self).__name__, self.user, self.name, self.value))
