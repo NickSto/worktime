@@ -6,7 +6,14 @@ from utils import ModelMixin
 log = logging.getLogger(__name__)
 MODE_MAX_LEN = 63
 
+#TODO: Let's have a button or something to create a demo `Era` (name it "Big Project" or
+#      something) that shows off all the features.
+
+class User(ModelMixin, models.Model):
+  name = models.CharField(max_length=255)
+
 class Era(ModelMixin, models.Model):
+  user = models.ForeignKey(User, models.SET_NULL, null=True, blank=True)
   description = models.CharField(max_length=255)
   current = models.BooleanField()
 
@@ -36,7 +43,8 @@ class Total(ModelMixin, models.Model):
   elapsed = models.IntegerField(default=0)
   era = models.ForeignKey(Era, models.SET_NULL, null=True, blank=True)
 
-class AuthorizedCookie(ModelMixin, models.Model):
+class Cookie(ModelMixin, models.Model):
+  user = models.ForeignKey(User, models.SET_NULL, null=True, blank=True)
   name = models.CharField(max_length=128)
   value = models.CharField(max_length=128)
   def __str__(self):

@@ -11,7 +11,7 @@ try:
 except ImportError:
   requests = None
 try:
-  from .models import Era, Period, Total, Adjustment
+  from .models import User, Era, Period, Total, Adjustment
   from django.db import transaction
 except ImportError:
   pass
@@ -481,12 +481,16 @@ class WorkTimesFiles(WorkTimes):
 
 class WorkTimesDatabase(WorkTimes):
 
+  def __init__(self, user=None, modes=MODES, hidden=HIDDEN):
+    super().__init__(modes=modes, hidden=hidden)
+    self.user = user
+
   def clear(self, new_description=''):
     # Create a new Era
-    new_era = Era(current=True, description=new_description)
+    new_era = Era(user=self.user, current=True, description=new_description)
     # Get the current Era, if any, and end it.
     try:
-      old_era = Era.objects.get(current=True)
+      old_era = Era.objects.get(user=self.user, current=True)
       old_era.current = False
     except Era.DoesNotExist:
       old_era = None
@@ -515,7 +519,7 @@ class WorkTimesDatabase(WorkTimes):
       return False
     new_era.current = True
     # Get the old era, make it not current anymore.
-    old_era = Era.objects.get(current=True)
+    old_era = Era.objects.get(user=self.user, current=True)
     old_era.current = False
     # Get the current Period and end it.
     try:
@@ -535,7 +539,7 @@ class WorkTimesDatabase(WorkTimes):
     # Get the current Era, if not already given.
     if era is None:
       try:
-        era = Era.objects.get(current=True)
+        era = Era.objects.get(user=self.user, current=True)
       except Era.DoesNotExist:
         return None, None
     # Get the current Period.
@@ -552,7 +556,7 @@ class WorkTimesDatabase(WorkTimes):
     # Note: If mode is None, this will just create a new Period where the mode is None.
     self.validate_mode(mode)
     # Get the current Era, or create one if it doesn't exist.
-    era, created = Era.objects.get_or_create(current=True)
+    era, created = Era.objects.get_or_create(user=self.user, current=True)
     # Create a new Period.
     now = int(time.time())
     new_period = Period(era=era, mode=mode, start=now)
@@ -593,7 +597,7 @@ class WorkTimesDatabase(WorkTimes):
     self.validate_mode(mode)
     # Get the current Era.
     try:
-      era = Era.objects.get(current=True)
+      era = Era.objects.get(user=self.user, current=True)
     except Era.DoesNotExist:
       return 0
     # Get the current Period.
@@ -616,7 +620,7 @@ class WorkTimesDatabase(WorkTimes):
     self.validate_mode(mode)
     # Get the current Era.
     try:
-      era = Era.objects.get(current=True)
+      era = Era.objects.get(user=self.user, current=True)
     except Era.DoesNotExist:
       return False
     now = int(time.time())
@@ -632,7 +636,7 @@ class WorkTimesDatabase(WorkTimes):
 
   def get_all_elapsed(self):
     try:
-      era = Era.objects.get(current=True)
+      era = Era.objects.get(user=self.user, current=True)
     except Era.DoesNotExist:
       return {}
     data = {}
@@ -643,7 +647,7 @@ class WorkTimesDatabase(WorkTimes):
   def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
     try:
-      era = Era.objects.get(current=True)
+      era = Era.objects.get(user=self.user, current=True)
     except Era.DoesNotExist:
       return summary
     summary['era'] = era.description
@@ -666,7 +670,7 @@ class WorkTimesDatabase(WorkTimes):
     ratios = []
     if era is None:
       try:
-        era = Era.objects.get(current=True)
+        era = Era.objects.get(user=self.user, current=True)
       except Era.DoesNotExist:
         return None, None
     now = int(time.time())
@@ -733,7 +737,7 @@ class WorkTimesDatabase(WorkTimes):
     # Get current Era.
     if era is None:
       try:
-        era = Era.objects.get(current=True)
+        era = Era.objects.get(user=self.user, current=True)
       except Era.DoesNotExist:
         return bar_periods
     # Get a list of periods in the last `timespan` seconds.
@@ -806,7 +810,7 @@ class WorkTimesDatabase(WorkTimes):
     # Get current Era.
     if era is None:
       try:
-        era = Era.objects.get(current=True)
+        era = Era.objects.get(user=self.user, current=True)
       except Era.DoesNotExist:
         return adjustments_data
     # Get a list of adjustments in the last `timespan` seconds.
