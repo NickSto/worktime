@@ -13,15 +13,13 @@ log = logging.getLogger(__name__)
 
 HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
+DEFAULT_ERA_NAME = 'Project 1'
 
 #TODO: Improve experience for first-time visitors:
 #      1. Write some introduction at the top.
 #      2. Show something under "Totals".
 #      3. Let's have a button or something to create a demo `Era` (name it "Big Project" or
 #         something) that shows off all the features.
-#      4. Name the default Era. Otherwise, when they first click Switch or Adjust, it'll create an
-#         unnamed Era, and then if they create a second Era, in the drop-down the first one will\
-#         appear just as a number.
 
 
 def require_post_and_cookie(view):
@@ -83,7 +81,8 @@ def switch(request):
   user = get_or_create_user(request)
   assert user is not None
   work_times = WorkTimesDatabase(user)
-  old_mode, old_elapsed = work_times.switch_mode(params['mode'])
+  era = get_or_create_era(user, DEFAULT_ERA_NAME)
+  old_mode, old_elapsed = work_times.switch_mode(params['mode'], era=era)
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @csrf_exempt
@@ -112,7 +111,8 @@ def adjust(request):
   user = get_or_create_user(request)
   assert user is not None
   work_times = WorkTimesDatabase(user)
-  work_times.add_elapsed(params['mode'], delta*60)
+  era = get_or_create_era(user, DEFAULT_ERA_NAME)
+  work_times.add_elapsed(params['mode'], delta*60, era=era)
   return HttpResponseRedirect(reverse('worktime_main'))
 
 @require_post_and_cookie
@@ -165,6 +165,15 @@ def get_or_create_user(request):
   cookie = Cookie(user=user, name=COOKIE_NAME, value=cookie_value)
   cookie.save()
   return user
+
+
+def get_or_create_era(user, default_name):
+  era, created = Era.objects.get_or_create(user=user, current=True)
+  if created:
+    era.description = default_name
+    era.save()
+  return era
+
 
 def warn_and_redirect_spambot(action, site, view_url=None):
   site_trunc = truncate(site)

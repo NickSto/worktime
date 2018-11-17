@@ -555,11 +555,12 @@ class WorkTimesDatabase(WorkTimes):
     now = int(time.time())
     return current_period.mode, now - current_period.start
 
-  def switch_mode(self, mode):
+  def switch_mode(self, mode, era=None):
     # Note: If mode is None, this will just create a new Period where the mode is None.
     self.validate_mode(mode)
     # Get the current Era, or create one if it doesn't exist.
-    era, created = Era.objects.get_or_create(user=self.user, current=True)
+    if era is None:
+      era, created = Era.objects.get_or_create(user=self.user, current=True)
     # Create a new Period.
     now = int(time.time())
     new_period = Period(era=era, mode=mode, start=now)
@@ -618,14 +619,12 @@ class WorkTimesDatabase(WorkTimes):
       elapsed_total = 0
     return elapsed_period + elapsed_total
 
-  def add_elapsed(self, mode, delta):
+  def add_elapsed(self, mode, delta, era=None):
     assert mode is not None, mode
     self.validate_mode(mode)
-    # Get the current Era.
-    try:
-      era = Era.objects.get(user=self.user, current=True)
-    except Era.DoesNotExist:
-      return False
+    # Get the current Era or create it if it doesn't exist.
+    if era is None:
+      era, created = Era.objects.get_or_create(user=self.user, current=True)
     now = int(time.time())
     # Create an Adjustment, and add to the Total for this mode.
     adjustment = Adjustment(era=era, mode=mode, delta=delta, timestamp=now)
