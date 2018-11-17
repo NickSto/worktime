@@ -102,7 +102,7 @@ function makeRequest(method, callback, url, errorCallback) {
 function updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem) {
   modeTimeElem.className = "mode-"+summary.current_mode;
   currentModeElem.textContent = summary.current_mode;
-  if (summary.current_mode) {
+  if (summary.current_mode && summary.current_mode !== "None") {
     currentElapsedElem.textContent = summary.current_elapsed;
   } else {
     currentElapsedElem.textContent = "";
@@ -162,6 +162,15 @@ function updateHistory(summary, historyTimespanElem, historyBarElem) {
   historyTimespanElem.textContent = "Past "+summary.history.timespan+":";
   /* Create the bar display. */
   removeChildren(historyBarElem);
+  // If there's no history, put in a dummy period just to show the bar.
+  if (summary.history.periods.length === 0) {
+    var periodElem = document.createElement('span');
+    periodElem.classList.add('period');
+    periodElem.classList.add('mode-None');
+    periodElem.style.width = '99%';
+    periodElem.dataset.index = 0;
+    historyBarElem.appendChild(periodElem);
+  }
   // Make the popups.
   for (var i = 0; i < summary.history.periods.length; i++) {
     var period = summary.history.periods[i];

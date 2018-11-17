@@ -51,7 +51,8 @@
               {% for period in history.periods %}<!--
                 Workaround to prevent whitespace appearing between the spans.
              --><span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%" data-index="{{ forloop.counter0 }}" title="{{ period.mode }} {{ period.timespan }}"></span><!--
-           -->{% endfor %}
+           -->{% empty %}<span class="period mode-None" style="width: 99%" data-index="0"></span>
+              {% endfor %}
             </div>
           </section>
           <div class="shrink-wrap">
@@ -75,31 +76,29 @@
                   </span>
                 </h4>
               </div>
-              {% if elapsed %}
-                <div id="totals">
-                  <h4>Totals</h4>
-                  <table class="pane1 table-bordered table-condensed">
-                    <tbody id="totals-table">
-                      {% for elapsed_line in elapsed %}
-                        <tr>
-                          <td class="name dummy"></td>
-                          <td class="name">{{ elapsed_line.mode }}</td>
-                          <td class="value">{{ elapsed_line.time }}</td>
-                        </tr>
-                      {% endfor %}
-                      {% for ratio in ratios %}
-                        <tr>
-                          {% if forloop.first %}
-                            <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
-                          {% endif %}
-                          <td class="name">{{ ratio.timespan }}</td>
-                          <td class="value">{{ ratio.value }}</td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              {% endif %}
+              <div id="totals">
+                <h4>Totals</h4>
+                <table class="pane1 table-bordered table-condensed">
+                  <tbody id="totals-table">
+                    {% for elapsed_line in elapsed %}
+                      <tr>
+                        <td class="name dummy"></td>
+                        <td class="name">{{ elapsed_line.mode }}</td>
+                        <td class="value">{{ elapsed_line.time }}</td>
+                      </tr>
+                    {% endfor %}
+                    {% for ratio in ratios %}
+                      <tr>
+                        {% if forloop.first %}
+                          <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
+                        {% endif %}
+                        <td class="name">{{ ratio.timespan }}</td>
+                        <td class="value">{{ ratio.value }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
             </section>
             <section id="actions" class="worktime-section pull-left">
               <h4>Actions</h4>
