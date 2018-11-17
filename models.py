@@ -6,9 +6,6 @@ from utils import ModelMixin
 log = logging.getLogger(__name__)
 MODE_MAX_LEN = 63
 
-#TODO: Let's have a button or something to create a demo `Era` (name it "Big Project" or
-#      something) that shows off all the features.
-
 class User(ModelMixin, models.Model):
   name = models.CharField(max_length=255)
 

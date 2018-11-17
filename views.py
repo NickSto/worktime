@@ -14,6 +14,15 @@ log = logging.getLogger(__name__)
 HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
 
+#TODO: Improve experience for first-time visitors:
+#      1. Write some introduction at the top.
+#      2. Show something under "Totals".
+#      3. Let's have a button or something to create a demo `Era` (name it "Big Project" or
+#         something) that shows off all the features.
+#      4. Name the default Era. Otherwise, when they first click Switch or Adjust, it'll create an
+#         unnamed Era, and then if they create a second Era, in the drop-down the first one will\
+#         appear just as a number.
+
 
 def require_post_and_cookie(view):
   def wrapper(request):
