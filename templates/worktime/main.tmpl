@@ -12,17 +12,6 @@
 
       <h2 id="title">Worktime</h2>
 
-      {% if not authorized %}
-        <section id="warning" class="panel panel-shrink">
-          <div class="panel-heading">
-            <h4>Warning</h4>
-          </div>
-          <div class="panel-body">
-            Only authorized users can perform the actions below.
-          </div>
-        </section>
-      {% endif %}
-
       <section id="main-display" class="panel panel-default">
         <div class="panel-heading">
           <h3>
@@ -38,35 +27,33 @@
             <p id="connection-status"></p>
             <p id="connection-warning"></p>
           </section>
-          {% if history.periods %}
-            <section id="history" class="worktime-section">
-              <h4>History</h4>
-              <p id="history-timespan">Past {{ history.timespan }}:</p>
-              <div id="adjustments-bar">
-                {% for adjustment in history.adjustments %}
-                  <span class="adjustment mode-{{ adjustment.mode }}" style="left: {{ adjustment.x }}%">
-                    {{ adjustment.mode }} {{ adjustment.sign }}{{ adjustment.magnitude }}
-                  </span>
-                {% endfor %}
-              </div>
-              <div id="adjustment-lines-bar">
-                {% for adjustment in history.adjustments %}
-                  <span class="adjustment-line" style="left: {{ adjustment.x }}%"></span>
-                {% endfor %}
-              </div>
-              <div id="history-bar">
-                {% for period in history.periods %}
-                  <div class="popup" data-index="{{ forloop.counter0 }}">
-                    {{ period.mode }} {{ period.timespan }}
-                  </div>
-                {% endfor %}
-                {% for period in history.periods %}<!--
-                  Workaround to prevent whitespace appearing between the spans.
-               --><span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%" data-index="{{ forloop.counter0 }}" title="{{ period.mode }} {{ period.timespan }}"></span><!--
-             -->{% endfor %}
-              </div>
-            </section>
-          {% endif %}
+          <section id="history" class="worktime-section">
+            <h4>History</h4>
+            <p id="history-timespan">Past {{ history.timespan }}:</p>
+            <div id="adjustments-bar">
+              {% for adjustment in history.adjustments %}
+                <span class="adjustment mode-{{ adjustment.mode }}" style="left: {{ adjustment.x }}%">
+                  {{ adjustment.mode }} {{ adjustment.sign }}{{ adjustment.magnitude }}
+                </span>
+              {% endfor %}
+            </div>
+            <div id="adjustment-lines-bar">
+              {% for adjustment in history.adjustments %}
+                <span class="adjustment-line" style="left: {{ adjustment.x }}%"></span>
+              {% endfor %}
+            </div>
+            <div id="history-bar">
+              {% for period in history.periods %}
+                <div class="popup" data-index="{{ forloop.counter0 }}">
+                  {{ period.mode }} {{ period.timespan }}
+                </div>
+              {% endfor %}
+              {% for period in history.periods %}<!--
+                Workaround to prevent whitespace appearing between the spans.
+             --><span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%" data-index="{{ forloop.counter0 }}" title="{{ period.mode }} {{ period.timespan }}"></span><!--
+           -->{% endfor %}
+            </div>
+          </section>
           <div class="shrink-wrap">
             <section id="stats" class="worktime-section pull-right">
               <div id="status">

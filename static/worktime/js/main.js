@@ -21,7 +21,7 @@ function main() {
     // Insert the new data into the page.
     // Called once the XMLHttpRequest has gotten a response.
     var summary = this.response;
-    if (summary && summary.elapsed && summary.history) {
+    if (summary && summary.elapsed && summary.ratios) {
       unwarn(connectionWarningElem);
       updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem);
       updateTotals(summary, totalsElem);
