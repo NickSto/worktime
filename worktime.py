@@ -648,9 +648,10 @@ class WorkTimesDatabase(WorkTimes):
     summary = super().get_summary(numbers=numbers, modes=modes)
     try:
       era = Era.objects.get(user=self.user, current=True)
+      summary['era'] = era.description
     except Era.DoesNotExist:
-      return summary
-    summary['era'] = era.description
+      era = None
+      summary['era'] = None
     if timespans:
       ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
       summary['ratios'].extend(ratios)
@@ -666,13 +667,13 @@ class WorkTimesDatabase(WorkTimes):
     return summary
 
   def _get_recent_ratios(self, timespans, numbers='values', modes=('p', 'w'), era=None):
-    """Get ratio for only the last `timespan` seconds."""
+    """Get ratios for only the last `timespan`s seconds."""
     ratios = []
     if era is None:
       try:
         era = Era.objects.get(user=self.user, current=True)
       except Era.DoesNotExist:
-        return None, None
+        return ratios
     now = int(time.time())
     cutoffs = [now-timespan for timespan in timespans]
     min_cutoff = min(cutoffs)
