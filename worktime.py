@@ -319,21 +319,24 @@ class WorkTimes(object):
           elapsed_data = {'mode':mode, 'time':timestring(all_elapsed[mode])}
         summary['elapsed'].append(elapsed_data)
     # If requested, calculate the ratio of the times for the specified modes.
-    if modes and modes[0] in all_elapsed and modes[1] in all_elapsed:
+    if modes:
       summary['ratio_str'] = '{}/{}'.format(modes[0], modes[1])
-      if all_elapsed[modes[1]] == 0:
+      if modes[0] not in all_elapsed and modes[1] not in all_elapsed:
+        ratio_value = None
+      elif all_elapsed.get(modes[1], 0) == 0:
         ratio_value = float('inf')
       else:
-        ratio_value = all_elapsed[modes[0]] / all_elapsed[modes[1]]
+        ratio_value = all_elapsed.get(modes[0], 0) / all_elapsed.get(modes[1], 0)
       if numbers == 'text':
-        if ratio_value == float('inf'):
+        if ratio_value is None:
+          ratio_value = 'None'
+        elif ratio_value == float('inf'):
           ratio_value = '∞'
         else:
           ratio_value = '{:0.2f}'.format(ratio_value)
-      if numbers == 'values':
-        ratio_timespan = float('inf')
-      elif numbers == 'text':
         ratio_timespan = 'total'
+      elif numbers == 'values':
+        ratio_timespan = float('inf')
       summary['ratios'] = [{'timespan':ratio_timespan, 'value':ratio_value}]
     else:
       summary['ratio_str'] = None
