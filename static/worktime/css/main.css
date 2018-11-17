@@ -98,13 +98,13 @@
   border-right: 1px #ccc solid;
 }
 
-#history .mode-w {
+#history .period.mode-w {
   background-color: #afa;
 }
-#history .mode-p {
+#history .period.mode-p {
   background-color: #faa;
 }
-#history .mode-n {
+#history .period.mode-n {
   background-color: #ddf;
 }
 
