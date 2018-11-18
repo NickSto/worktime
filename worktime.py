@@ -188,21 +188,25 @@ def timestring_hhmm(sec_total, abbrev=True, label_smallest=False):
   """Convert time in seconds to HH:MM string"""
   if sec_total is None:
     return 'None'
-  min_total = round(sec_total / 60)
+  if sec_total < 0:
+    sign = '-'
+  else:
+    sign = ''
+  min_total = round(abs(sec_total) / 60)
   hours = min_total // 60
   minutes = min_total % 60
   if hours:
-    return "%d:%02d" % (hours, minutes)
+    return '{}{:d}:{:02d}'.format(sign, hours, minutes)
   else:
     if label_smallest:
       if abbrev:
-        return '{}min'.format(minutes)
+        return '{}{}min'.format(sign, minutes)
       elif minutes == 1:
-        return '1 minute'
+        return sign+'1 minute'
       else:
-        return '{} minutes'.format(minutes)
+        return '{}{} minutes'.format(sign, minutes)
     else:
-      return str(minutes)
+      return sign+str(minutes)
 
 
 def timestring_even(sec_total, abbrev=True):
