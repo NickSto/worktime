@@ -8,7 +8,7 @@ from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Era, Period, User, Cookie
 from .worktime import MODES, WorkTimesDatabase, timestring
-from utils import QueryParams, boolish
+from utils.queryparams import QueryParams, boolish
 log = logging.getLogger(__name__)
 
 HISTORY_BAR_TIMESPAN = 2*60*60
@@ -89,7 +89,7 @@ def switch(request):
   if params['site']:
     return warn_and_redirect_spambot('switch', params['site'], reverse('worktime_main'))
   if params.invalid_value:
-    log.warning('Invalid or missing mode {!r}.'.format(params.get('mode')))
+    log.warning('Invalid parameter.')
     return HttpResponseRedirect(reverse('worktime_main'))
   user = get_or_create_user(request)
   assert user is not None
