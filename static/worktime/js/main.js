@@ -56,7 +56,7 @@ function main() {
       connectionElem.style.color = "red";
     }
     if (debug) {
-      content = now + " - " + lastUpdate + " = " + content;
+      content = Math.round(now) + " - " + Math.round(lastUpdate) + " = " + content;
     }
     connectionElem.textContent = content;
     if (age <= 1) {
