@@ -17,9 +17,19 @@ DEFAULT_ERA_NAME = 'Project 1'
 
 #TODO: Improve experience for first-time visitors:
 #      1. Write some introduction at the top.
-#      2. Show something under "Totals".
-#      3. Let's have a button or something to create a demo `Era` (name it "Big Project" or
+#      2. Let's have a button or something to create a demo `Era` (name it "Big Project" or
 #         something) that shows off all the features.
+
+#TODO: A way for users to link their devices.
+#      I'd hate to institute a username/password system, so how about alternatives?
+#      One idea is to generate a one-use code that they enter on a device.
+#      I could have a button that the user clicks to generate a code, and then they enter it on
+#      the other device. The `User` of the device that generated the code is now associated with
+#      both `Cookie`s. Once they enter it on the other device (or after a limited time, like 10 min)
+#      the code is deactivated.
+#      The codes could be a series of words randomly chosen from the EFF diceware dictionary.
+#      I could store it as a field on the `User` model, along with a timestamp field so I know when
+#      to expire it.
 
 
 def require_post_and_cookie(view):
