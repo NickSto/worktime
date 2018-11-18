@@ -42,6 +42,8 @@ function main() {
   }
 
   function updateConnection() {
+    var params = getQueryParams();
+    var debug = params["debug"];
     var now = Date.now()/1000;
     var age = now - lastUpdate;
     /* Set the age text. */
@@ -52,6 +54,9 @@ function main() {
     } else {
       content += "!";
       connectionElem.style.color = "red";
+    }
+    if (debug) {
+      content = now + " - " + lastUpdate + " = " + content;
     }
     connectionElem.textContent = content;
     if (age <= 1) {
@@ -373,6 +378,42 @@ function formatTime(quantity, unit) {
     output += 's';
   }
   return output;
+}
+
+function getQueryParams(query_string) {
+  if (query_string === undefined) {
+    query_string = window.location.search;
+  }
+  if (typeof URLSearchParams === "undefined") {
+    return getQueryParamsShim(query_string);
+  }
+  var searchParams = new URLSearchParams(query_string);
+  var params = {};
+  for (var key of searchParams.keys()) {
+    params[key] = searchParams.get(key);
+  }
+  return params;
+}
+
+function getQueryParamsShim(query_string) {
+  // WARNING: This is very rough and simple, and only really intended for simple situations like
+  //          "?debug=true". Specifically, it doesn't decode percent-encoded values or deal with
+  //          the same key appearing multiple times.
+  var params = {};
+  if (query_string.length >= 1 && query_string[0] === "?") {
+    query_string = query_string.substr(1);
+  }
+  if (query_string === "") {
+    return params;
+  }
+  var parts = query_string.split("&");
+  for (var i = 0; i < parts.length; i++) {
+    var fields = parts[i].split("=");
+    if (fields.length === 2) {
+      params[fields[0]] = fields[1];
+    }
+  }
+  return params;
 }
 
 window.addEventListener('load', main, false);
