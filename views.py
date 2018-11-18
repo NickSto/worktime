@@ -50,10 +50,12 @@ def main(request):
   params = QueryParams()
   params.add('format', choices=('html', 'plain', 'json'), default='html')
   params.add('numbers', choices=('values', 'text'), default='text')
+  params.add('debug', type=boolish)
   params.parse(request.GET)
   user = get_user(request)
   work_times = WorkTimesDatabase(user)
   summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
+  summary['debug'] = params['debug']
   summary['modes'] = work_times.modes
   summary['eras'] = []
   for era in Era.objects.filter(user=user, current=False):
@@ -81,6 +83,7 @@ def main(request):
 def switch(request):
   params = QueryParams()
   params.add('mode', choices=MODES)
+  params.add('debug', type=boolish)
   params.add('site')
   params.parse(request.POST)
   if params['site']:
@@ -93,7 +96,11 @@ def switch(request):
   work_times = WorkTimesDatabase(user)
   era = get_or_create_era(user, DEFAULT_ERA_NAME)
   old_mode, old_elapsed = work_times.switch_mode(params['mode'], era=era)
-  return HttpResponseRedirect(reverse('worktime_main'))
+  if params['debug']:
+    query_str = '?debug=true'
+  else:
+    query_str = ''
+  return HttpResponseRedirect(reverse('worktime_main')+query_str)
 
 @csrf_exempt
 @require_post_and_cookie
@@ -102,6 +109,7 @@ def adjust(request):
   params.add('mode', choices=MODES)
   params.add('add', type=int)
   params.add('subtract', type=int)
+  params.add('debug', type=boolish)
   params.add('site')
   params.parse(request.POST)
   if params['site']:
@@ -123,13 +131,18 @@ def adjust(request):
   work_times = WorkTimesDatabase(user)
   era = get_or_create_era(user, DEFAULT_ERA_NAME)
   work_times.add_elapsed(params['mode'], delta*60, era=era)
-  return HttpResponseRedirect(reverse('worktime_main'))
+  if params['debug']:
+    query_str = '?debug=true'
+  else:
+    query_str = ''
+  return HttpResponseRedirect(reverse('worktime_main')+query_str)
 
 @require_post_and_cookie
 def switchera(request):
   params = QueryParams()
   params.add('era', type=int)
   params.add('new-era')
+  params.add('debug', type=boolish)
   params.add('site')
   params.parse(request.POST)
   if params['site']:
@@ -141,7 +154,11 @@ def switchera(request):
     work_times.clear(params['new-era'])
   elif params['era'] is not None:
     work_times.switch_era(params['era'])
-  return HttpResponseRedirect(reverse('worktime_main'))
+  if params['debug']:
+    query_str = '?debug=true'
+  else:
+    query_str = ''
+  return HttpResponseRedirect(reverse('worktime_main')+query_str)
 
 @csrf_exempt
 @require_post_and_cookie

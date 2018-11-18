@@ -113,6 +113,7 @@
                   </button>
                 {% endfor %}
                 <input class="ruhuman" name="site" type="text">
+                <input type="hidden" name="debug" value="{{ debug }}">
               </form>
               <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
                 {% csrf_token %}
@@ -138,8 +139,9 @@
                 </p>
                 <p>
                   <input name="new-era" type="text">
-                  <input class="ruhuman" name="site" type="text">
                 </p>
+                <input class="ruhuman" name="site" type="text">
+                <input type="hidden" name="debug" value="{{ debug }}">
                 <input class="btn btn-default" type="submit" value="Submit">
               </form>
               <form id="adjust" name="adjust" method="post" action="{% url 'worktime:adjust' %}">
@@ -165,6 +167,7 @@
                   {% endfor %}
                 </div>
                 <input class="ruhuman" name="site" type="text">
+                <input type="hidden" name="debug" value="{{ debug }}">
               </form>
             </section>
           </div>
