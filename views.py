@@ -151,9 +151,15 @@ def switchera(request):
   assert user is not None
   work_times = WorkTimesDatabase(user)
   if params['new-era']:
-    dest_era = Era(user=user, current=False, description=params['new-era'])
-    dest_era.save()
-    dest_era_id = dest_era.id
+    existing_eras = Era.objects.filter(user=user, description=params['new-era'])
+    if existing_eras.count() > 0:
+      log.warning('User tried to create a new Era with the same name as an existing one ({!r})'
+                  .format(params['new-era']))
+      dest_era_id = existing_eras[0].id
+    else:
+      dest_era = Era(user=user, current=False, description=params['new-era'])
+      dest_era.save()
+      dest_era_id = dest_era.id
   else:
     dest_era_id = params['era']
   if dest_era_id is not None:
