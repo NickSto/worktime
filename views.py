@@ -140,8 +140,8 @@ def adjust(request):
 @require_post_and_cookie
 def switchera(request):
   params = QueryParams()
-  params.add('era', type=int)
-  params.add('new-era')
+  params.add('era', type=int)  # This is the Era.id (primary key).
+  params.add('new-era')        # This is a name for the new Era.
   params.add('debug', type=boolish)
   params.add('site')
   params.parse(request.POST)
@@ -151,9 +151,13 @@ def switchera(request):
   assert user is not None
   work_times = WorkTimesDatabase(user)
   if params['new-era']:
-    work_times.clear(params['new-era'])
-  elif params['era'] is not None:
-    work_times.switch_era(params['era'])
+    dest_era = Era(user=user, current=False, description=params['new-era'])
+    dest_era.save()
+    dest_era_id = dest_era.id
+  else:
+    dest_era_id = params['era']
+  if dest_era_id is not None:
+    work_times.switch_era(id=dest_era_id)
   if params['debug']:
     query_str = '?debug=true'
   else:

@@ -495,7 +495,7 @@ class WorkTimesDatabase(WorkTimes):
   def clear(self, new_description=''):
     # Create a new Era
     new_era = Era(user=self.user, current=True, description=new_description)
-    # Get the current Era, if any, and end it.
+    # Get the current Era, if any, and mark it as not the current one.
     try:
       old_era = Era.objects.get(user=self.user, current=True)
       old_era.current = False
@@ -518,28 +518,23 @@ class WorkTimesDatabase(WorkTimes):
       if current_period:
         current_period.save()
 
-  def switch_era(self, new_era_id):
+  def switch_era(self, new_era=None, id=None):
     # Get the new era, make it the current one.
-    try:
-      new_era = Era.objects.get(pk=new_era_id)
-    except Era.DoesNotExist:
-      return False
+    if new_era is None:
+      try:
+        new_era = Era.objects.get(pk=id)
+      except Era.DoesNotExist:
+        return False
+    else:
+      assert new_era is not None
     new_era.current = True
     # Get the old era, make it not current anymore.
     old_era = Era.objects.get(user=self.user, current=True)
     old_era.current = False
-    # Get the current Period and end it.
-    try:
-      current_period = Period.objects.get(era=old_era, end=None, next=None)
-      current_period.end = int(time.time())
-    except Period.DoesNotExist:
-      current_period = None
     # Commit changes.
     with transaction.atomic():
       old_era.save()
       new_era.save()
-      if current_period:
-        current_period.save()
     return True
 
   def get_status(self, era=None):
