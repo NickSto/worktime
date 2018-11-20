@@ -14,7 +14,7 @@
 
       <section id="main-display" class="panel panel-default">
         <div class="panel-heading">
-          <h3>
+          <h3 id="era-name">
             {% if era %}
               {{ era }}
             {% else %}
@@ -118,28 +118,32 @@
               <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
                 {% csrf_token %}
                 {% if eras %}
-                  <p>
-                    <strong>Change</strong> project to:
-                  </p>
-                  <p>
-                    <select name="era">
-                      {% for era in eras %}
-                        <option value="{{ era.id }}">{{ era.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </p>
+                  <div id="choose-era">
+                    <p>
+                      <strong>Change</strong> project to:
+                    </p>
+                    <p>
+                      <select id="era-select" name="era">
+                        {% for era in eras %}
+                          <option value="{{ era.id }}">{{ era.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </p>
+                  </div>
                 {% endif %}
-                <p>
-                  {% if eras %}
-                    Or start
-                  {% else %}
-                    <strong>Start</strong>
-                  {% endif %}
-                  a new project:
-                </p>
-                <p>
-                  <input name="new-era" type="text">
-                </p>
+                <div id="create-era">
+                  <p id="create-era-prompt">
+                    {% if eras %}
+                      Or start
+                    {% else %}
+                      <strong>Start</strong>
+                    {% endif %}
+                    a new project:
+                  </p>
+                  <p>
+                    <input name="new-era" type="text">
+                  </p>
+                </div>
                 <input class="ruhuman" name="site" type="text">
                 <input type="hidden" name="debug" value="{{ debug }}">
                 <input class="btn btn-default" type="submit" value="Submit">
