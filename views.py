@@ -56,15 +56,6 @@ def main(request):
   work_times = WorkTimesDatabase(user)
   summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
   summary['debug'] = params['debug']
-  summary['modes'] = work_times.modes
-  summary['eras'] = []
-  for era in Era.objects.filter(user=user, current=False):
-    era_dict = {'id':era.id}
-    if era.description:
-      era_dict['name'] = era.description[:22]
-    else:
-      era_dict['name'] = str(era.id)
-    summary['eras'].append(era_dict)
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':

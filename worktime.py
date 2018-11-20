@@ -647,12 +647,22 @@ class WorkTimesDatabase(WorkTimes):
 
   def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
+    summary['modes'] = self.modes
     try:
       era = Era.objects.get(user=self.user, current=True)
       summary['era'] = era.description
     except Era.DoesNotExist:
       era = None
       summary['era'] = None
+    summary['eras'] = []
+    for other_era in Era.objects.filter(user=self.user, current=False):
+      era_dict = {'id':other_era.id}
+      if other_era.description:
+        era_dict['name'] = other_era.description[:22]
+      else:
+        era_dict['name'] = str(other_era.id)
+      summary['eras'].append(era_dict)
+    summary['eras'].sort(key=lambda era_dict: era_dict['name'])
     if timespans:
       ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
       summary['ratios'].extend(ratios)
