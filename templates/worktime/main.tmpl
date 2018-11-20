@@ -108,7 +108,7 @@
                   <strong>Switch</strong> mode to:
                 </p>
                 {% for mode in modes %}
-                  <button class="btn btn-default" name="mode" value="{{ mode }}">
+                  <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
                     {{ mode }}
                   </button>
                 {% endfor %}
@@ -146,7 +146,7 @@
                 </div>
                 <input class="ruhuman" name="site" type="text">
                 <input type="hidden" name="debug" value="{{ debug }}">
-                <input class="btn btn-default" type="submit" value="Submit">
+                <input class="btn btn-default ajaxable" type="submit" value="Submit">
               </form>
               <form id="adjust" name="adjust" method="post" action="{% url 'worktime:adjust' %}">
                 {% csrf_token %}
@@ -165,7 +165,7 @@
                 </div>
                 <div id="adjust-mode" class="pull-right">
                   {% for mode in modes %}
-                    <button class="btn btn-default" name="mode" value="{{ mode }}">
+                    <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
                       {{ mode }}
                     </button>
                   {% endfor %}

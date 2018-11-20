@@ -1,5 +1,10 @@
+//TODO: Add a button to turn off auto-updating (when debug=true).
+//TODO: Scroll buttons under the history bar?
+
 function main() {
 
+  var eraNameElem = document.getElementById('era-name');
+  var eraSelectElem = document.getElementById('era-select');
   var modeTimeElem = document.getElementById('mode-time');
   var currentModeElem = document.getElementById('current-mode');
   var currentElapsedElem = document.getElementById('current-elapsed');
@@ -23,22 +28,23 @@ function main() {
     var summary = this.response;
     if (summary && summary.elapsed && summary.ratios) {
       unwarn(connectionWarningElem);
+      updateEras(summary, eraNameElem, eraSelectElem);
       updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem);
       updateTotals(summary, totalsElem);
       updateHistory(summary, historyTimespanElem, historyBarElem);
       updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem);
       lastUpdate = Date.now()/1000;
-      //TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
-      //      Is `if (summary)` not properly detecting the failure?
+      /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
+       *      Symptoms: on mobile devices, I switch back to the tab after a long time and the info
+       *      is definitely out of date, but the display says it's only a few seconds old.
+       *      Is `if (summary)` not properly detecting the failure? Doesn't seem like it.
+       *      Maybe it actually did get a response, but didn't properly update the display?
+       */
     } else if (summary) {
       warn(connectionWarningElem, "Invalid summary object returned");
     } else {
       warn(connectionWarningElem, "No summary object returned");
     }
-  }
-
-  function connectionWarn(event) {
-    warn(connectionWarningElem, "Could not connect to server");
   }
 
   function updateConnection() {
@@ -70,27 +76,41 @@ function main() {
     //      update. Color it something weird like purple.
   }
 
+  function connectionWarn(event) {
+    warn(connectionWarningElem, "Could not connect to server");
+  }
+
   function updateSummary() {
     // Only update when the tab is visible.
     // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
     // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
     if (!document.hidden) {
-      makeRequest('GET', applySummary, '/worktime?format=json&numbers=text&via=js', connectionWarn);
+      makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
     }
   }
 
-  function visibilityHandler() {
-    updateSummary();
+  function submitForm(event) {
+    event.preventDefault();
+    // Find the enclosing form element.
+    var formElem = getAncestor(event.target, "FORM");
+    var form = new FormData(formElem);
+    // Make sure to include which button was clicked, if there was one.
+    if (event.target.tagName === "BUTTON" && event.target.name) {
+      form.append(event.target.name, event.target.value);
+    }
+    makeRequest("POST", formElem.action, updateSummary, formFailureWarn, form);
   }
+
+  attachFormListener(submitForm);
 
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
   window.setInterval(updateSummary, 30*1000);
   window.setInterval(updateConnection, 1*1000);
-  document.addEventListener('visibilitychange', visibilityHandler, false);
+  document.addEventListener('visibilitychange', updateSummary, false);
 }
 
-function makeRequest(method, callback, url, errorCallback) {
+function makeRequest(method, url, callback, errorCallback, data) {
   var request = new XMLHttpRequest();
   request.responseType = 'json';
   request.addEventListener('load', callback, true);
@@ -98,11 +118,47 @@ function makeRequest(method, callback, url, errorCallback) {
     request.addEventListener('error', errorCallback, true);
   }
   request.open(method, url);
-  request.send();
+  if (data === undefined) {
+    request.send();
+  } else {
+    request.send(data);
+  }
+}
+
+function attachFormListener(formListener) {
+  var buttons = document.getElementsByTagName("button");
+  var submits = document.querySelectorAll('input[type="submit"]');
+  var elementLists = [buttons, submits];
+  for (var i = 0; i < elementLists.length; i++) {
+    for (var j = 0; j < elementLists[i].length; j++) {
+      var element = elementLists[i][j];
+      if (element.classList.contains("ajaxable")) {
+        element.addEventListener("click", formListener);
+      }
+    }
+  }
 }
 
 
 /***** UPDATE DISPLAYED DATA *****/
+
+function updateEras(summary, eraNameElem, eraSelectElem) {
+  if (summary.era) {
+    eraNameElem.textContent = summary.era;
+  } else {
+    eraNameElem.textContent = "Worktime";
+  }
+  if (summary.eras) {
+    removeChildren(eraSelectElem);
+    for (var i = 0; i < summary.eras.length; i++) {
+      var era = summary.eras[i];
+      var optionElem = document.createElement("option");
+      optionElem.value = era.id;
+      optionElem.textContent = era.name;
+      eraSelectElem.appendChild(optionElem);
+    }
+  }
+}
 
 function updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem) {
   modeTimeElem.className = "mode-"+summary.current_mode;
@@ -277,7 +333,13 @@ function showPopup(event) {
   fadeOut(popupElem, 5);
 }
 
-function fadeOut(element, timespan) {
+function fadeOut(element, timespan, endAction) {
+  if (endAction === undefined) {
+    endAction = function(element) {
+      element.style.opacity = 1;
+      element.style.display = "none";
+    }
+  }
   var start = Date.now()/1000;
   element.dataset.fadeStart = start;
   function updateFade() {
@@ -287,8 +349,7 @@ function fadeOut(element, timespan) {
     var now = Date.now()/1000;
     var elapsed = now-start;
     if (elapsed >= timespan) {
-      element.style.opacity = 1;
-      element.style.display = "none";
+      endAction(element);
     } else {
       element.style.opacity = 1 - elapsed/timespan;
       window.setTimeout(updateFade, 50);
@@ -346,6 +407,21 @@ function unwarn(warningElem) {
   warningElem.style.display = "none";
 }
 
+function flashWarning(message, warningElem, timespan) {
+  if (warningElem === undefined) {
+    warningElem = document.getElementById('connection-warning');
+  }
+  if (timespan === undefined) {
+    timespan = 10;
+  }
+  warn(message);
+  fadeOut(element, timespan, unwarn);
+}
+
+function formFailureWarn() {
+  flashWarning("Connection error. Action failed.")
+}
+
 function humanTime(seconds) {
   seconds = Math.round(seconds);
   if (seconds < 60) {
@@ -378,6 +454,20 @@ function formatTime(quantity, unit) {
     output += 's';
   }
   return output;
+}
+
+function getAncestor(descendent, ancestorTag) {
+  // Find the enclosing <ancestorTag> element of descendent.
+  var elem = descendent;
+  while (elem.tagName !== ancestorTag && elem !== null) {
+    elem = elem.parentElement;
+  }
+  if (elem === null) {
+    console.log("Error: Could not find parent <"+ancestorTag+"> element.");
+    return;
+  } else {
+    return elem;
+  }
 }
 
 function getQueryParams(query_string) {
