@@ -348,10 +348,12 @@ function fadeOut(element, timespan, endAction) {
     }
     var now = Date.now()/1000;
     var elapsed = now-start;
+    element.style.opacity = Math.max(1 - elapsed/timespan, 0);
     if (elapsed >= timespan) {
-      endAction(element);
+      if (endAction) {
+        endAction(element);
+      }
     } else {
-      element.style.opacity = 1 - elapsed/timespan;
       window.setTimeout(updateFade, 50);
     }
   }
