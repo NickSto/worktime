@@ -7,10 +7,10 @@
 .popup {
   position: absolute;
   display: inline-block;
-  border: 1px solid #ddd;
   border-radius: 3px;
   padding: 5px 8px 5px 8px;
-  background-color: #eee;
+  color: white;
+  background-color: #444;
 }
 
 #warning {
