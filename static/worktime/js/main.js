@@ -99,6 +99,7 @@ function main() {
       form.append(event.target.name, event.target.value);
     }
     makeRequest("POST", formElem.action, updateSummary, formFailureWarn, form);
+    clearForm(formElem);
   }
 
   attachFormListener(submitForm);
@@ -469,6 +470,21 @@ function getAncestor(descendent, ancestorTag) {
     return;
   } else {
     return elem;
+  }
+}
+
+function clearForm(rootNode) {
+  // Blank out any form selections. Currently just works on text fields.
+  // Input: The <form> element. This will find all its descendents and clear any input[type="text"]
+  // elements.
+  for (var i = 0; i < rootNode.children.length; i++) {
+    var child = rootNode.children[i];
+    if (child.tagName === "INPUT" && child.type === "text") {
+      child.value = "";
+    }
+    if (child.children.length > 0) {
+      clearForm(child);
+    }
   }
 }
 
