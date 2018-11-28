@@ -188,6 +188,7 @@
                     {% endif %}
                     Auto-update
                   </p>
+                  {% comment "For when abbreviation-off feature is implemented." %}
                   <p>
                     {% if settings.abbrev %}
                       <button class="btn btn-default ajaxable active" name="abbrev" value="off">on</button>
@@ -196,6 +197,7 @@
                     {% endif %}
                     Abbreviate modes
                   </p>
+                  {% endcomment %}
                 </form>
               </section> <!-- #settings -->
             </div> <!-- .column.pull-left -->
