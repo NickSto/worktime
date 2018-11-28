@@ -5,23 +5,12 @@ var autoUpdate = true;
 function main() {
   unhideJSelems();
 
-  var eraNameElem = document.getElementById('era-name');
-  var chooseEraElem = document.getElementById('choose-era');
-  var eraSelectElem = document.getElementById('era-select');
-  var createEraPromptElem = document.getElementById('create-era-prompt');
-  var modeTimeElem = document.getElementById('mode-time');
-  var currentModeElem = document.getElementById('current-mode');
-  var currentElapsedElem = document.getElementById('current-elapsed');
-  var totalsElem = document.getElementById('totals-table');
   var statsElem = document.getElementById('stats');
   var historyElem = document.getElementById('history');
-  var historyTimespanElem = document.getElementById('history-timespan');
   var historyBarElem = document.getElementById('history-bar');
   var connectionElem = document.getElementById('connection-status');
   var connectionWarningElem = document.getElementById('connection-warning');
   var adjustmentsBarElem = document.getElementById('adjustments-bar');
-  var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
-  var settingsElem = document.getElementById('settings');
   var autoUpdateToggleElem = document.getElementById('autoupdate-toggle');
 
   if (autoUpdateToggleElem.textContent === "off") {
@@ -38,12 +27,12 @@ function main() {
     var summary = this.response;
     if (summary && summary.elapsed && summary.ratios) {
       unwarn(connectionWarningElem);
-      updateEras(summary, eraNameElem, eraSelectElem, chooseEraElem, createEraPromptElem);
-      updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem);
-      updateTotals(summary, totalsElem);
-      updateHistory(summary, historyTimespanElem, historyBarElem);
-      updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem);
-      updateSettings(summary, settingsElem);
+      updateEras(summary);
+      updateStatus(summary);
+      updateTotals(summary);
+      updateHistory(summary, historyBarElem);
+      updateAdjustments(summary, adjustmentsBarElem);
+      updateSettings(summary);
       lastUpdate = Date.now()/1000;
       /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
        *      Symptoms: on mobile devices, I switch back to the tab after a long time and the info
@@ -169,7 +158,11 @@ function attachFormListener(formListener) {
 
 /***** UPDATE DISPLAYED DATA *****/
 
-function updateEras(summary, eraNameElem, eraSelectElem, chooseEraElem, createEraPromptElem) {
+function updateEras(summary) {
+  var eraNameElem = document.getElementById('era-name');
+  var chooseEraElem = document.getElementById('choose-era');
+  var eraSelectElem = document.getElementById('era-select');
+  var createEraPromptElem = document.getElementById('create-era-prompt');
   if (summary.era) {
     eraNameElem.textContent = summary.era;
   } else {
@@ -200,7 +193,10 @@ function updateEras(summary, eraNameElem, eraSelectElem, chooseEraElem, createEr
   }
 }
 
-function updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem) {
+function updateStatus(summary) {
+  var modeTimeElem = document.getElementById('mode-time');
+  var currentModeElem = document.getElementById('current-mode');
+  var currentElapsedElem = document.getElementById('current-elapsed');
   modeTimeElem.className = "mode-"+summary.current_mode;
   currentModeElem.textContent = summary.current_mode;
   if (summary.current_mode && summary.current_mode !== "None") {
@@ -211,6 +207,7 @@ function updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem
 }
 
 function updateTotals(summary, totalsElem) {
+  var totalsElem = document.getElementById('totals-table');
   removeChildren(totalsElem);
   for (var i = 0; i < summary.elapsed.length; i++) {
     var total = summary.elapsed[i];
@@ -256,7 +253,8 @@ function makeRow(name1, name2, value, rowspan) {
   return row;
 }
 
-function updateHistory(summary, historyTimespanElem, historyBarElem) {
+function updateHistory(summary, historyBarElem) {
+  var historyTimespanElem = document.getElementById('history-timespan');
   if (!summary.history) {
     return;
   }
@@ -305,7 +303,8 @@ function updateHistory(summary, historyTimespanElem, historyBarElem) {
   }
 }
 
-function updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem) {
+function updateAdjustments(summary, adjustmentsBarElem) {
+  var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
   removeChildren(adjustmentsBarElem);
   removeChildren(adjustmentLinesBarElem);
   for (var i = 0; i < summary.history.adjustments.length; i++) {
@@ -332,6 +331,7 @@ function updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem) 
 }
 
 function updateSettings(summary, settingsElem) {
+  var settingsElem = document.getElementById('settings');
   if (summary.settings === undefined) {
     return false;
   }
