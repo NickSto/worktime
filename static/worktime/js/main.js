@@ -19,7 +19,7 @@ function main() {
   var connectionWarningElem = document.getElementById('connection-warning');
   var adjustmentsBarElem = document.getElementById('adjustments-bar');
   var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
-  var autoUpdateButtonElem = document.getElementById('auto-update-button');
+  var settingsElem = document.getElementById('settings');
 
   var lastUpdate = Date.now()/1000;
   connectionElem.textContent = "Current";
@@ -36,6 +36,7 @@ function main() {
       updateTotals(summary, totalsElem);
       updateHistory(summary, historyTimespanElem, historyBarElem);
       updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem);
+      updateSettings(summary, settingsElem);
       lastUpdate = Date.now()/1000;
       /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
        *      Symptoms: on mobile devices, I switch back to the tab after a long time and the info
@@ -102,10 +103,10 @@ function main() {
       form.append(event.target.name, event.target.value);
     }
     makeRequest("POST", formElem.action, updateSummary, formFailureWarn, form);
-    clearForm(formElem);
+    var fields = getFormFields(formElem);
+    clearFields(fields);
   }
 
-  autoUpdateButtonElem.addEventListener("click", toggleAutoUpdate)
   attachFormListener(submitForm);
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
@@ -295,6 +296,34 @@ function updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem) 
   arrangeAdjustments(adjustmentsBarElem);
 }
 
+function updateSettings(summary, settingsElem) {
+  if (summary.settings === undefined) {
+    return false;
+  }
+  var fields = getFormFields(settingsElem);
+  for (var i = 0; i < fields.length; i++) {
+    var field = fields[i];
+    var setting = field.name;
+    var value = summary.settings[setting];
+    if (value === undefined) {
+      continue;
+    }
+    if (field.tagName === "BUTTON") {
+      if (value === true) {
+        field.textContent = "on";
+        field.value = "off";
+        field.classList.add("active");
+      } else if (value === false) {
+        field.textContent = "off";
+        field.value = "on";
+        field.classList.remove("active");
+      }
+    }
+  }
+  autoUpdate = summary.settings.autoupdate;
+  //TODO: Do an update immediately if switched to true.
+}
+
 function removeChildren(element) {
   while (element.childNodes.length > 0) {
     element.removeChild(element.childNodes[0]);
@@ -437,27 +466,6 @@ function unhideJSelems() {
   }
 }
 
-function toggleAutoUpdate(event) {
-  var autoUpdateButtonElem = event.target;
-  if (autoUpdateButtonElem.id != 'auto-update-button') {
-    return false;
-  }
-  //TODO: Send to server to persist preference.
-  event.preventDefault();
-  if (autoUpdateButtonElem.value === "off") {
-    autoUpdate = false;
-    autoUpdateButtonElem.value = "on";
-    autoUpdateButtonElem.textContent = "off";
-    autoUpdateButtonElem.classList.remove("active");
-  } else if (autoUpdateButtonElem.value === "on") {
-    autoUpdate = true;
-    autoUpdateButtonElem.value = "off";
-    autoUpdateButtonElem.textContent = "on";
-    autoUpdateButtonElem.classList.add("active");
-    //TODO: Do an update immediately.
-  }
-}
-
 function humanTime(seconds) {
   seconds = Math.round(seconds);
   if (seconds < 60) {
@@ -506,17 +514,32 @@ function getAncestor(descendent, ancestorTag) {
   }
 }
 
-function clearForm(rootNode) {
-  // Blank out any form selections. Currently just works on text fields.
-  // Input: The <form> element. This will find all its descendents and clear any input[type="text"]
-  // elements.
+function getFormFields(rootNode) {
+  // Find all <input> and <button> descendent elements.
+  var fields = [];
   for (var i = 0; i < rootNode.children.length; i++) {
     var child = rootNode.children[i];
-    if (child.tagName === "INPUT" && child.type === "text") {
-      child.value = "";
+    if (child.tagName === "INPUT" || child.tagName === "BUTTON") {
+      fields.push(child);
+    } else {
+      var childFields = getFormFields(child);
+      fields = fields.concat(childFields);
     }
-    if (child.children.length > 0) {
-      clearForm(child);
+  }
+  return fields;
+}
+
+function clearFields(fields) {
+  // Blank out any form selections. Currently just works on text fields and buttons.
+  // Input: An array of form field elements. This will clear any that are input[type="text"].
+  // It will also remove the focus from those elements, as well as any <button>s.
+  for (var i = 0; i < fields.length; i++) {
+    var field = fields[i];
+    if (field.tagName === "INPUT" && field.type === "text") {
+      field.value = "";
+      field.blur();
+    } else if (field.tagName === "BUTTON") {
+      field.blur();
     }
   }
 }

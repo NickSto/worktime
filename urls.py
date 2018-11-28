@@ -10,4 +10,5 @@ urlpatterns = [
   url(r'adjust$', views.adjust, name='adjust'),
   url(r'switchera$', views.switchera, name='switchera'),
   url(r'clear$', views.clear, name='clear'),
+  url(r'settings$', views.settings, name='settings'),
 ]

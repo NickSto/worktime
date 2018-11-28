@@ -675,7 +675,20 @@ class WorkTimesDatabase(WorkTimes):
         summary['history']['timespan'] = timespan
       elif numbers == 'text':
         summary['history']['timespan'] = timestring(timespan, format='even', abbrev=False)
+    summary['settings'] = self._get_user_settings()
     return summary
+
+  def _get_user_settings(self):
+    settings = {}
+    for setting in User.SETTINGS:
+      if self.user is None:
+        try:
+          settings[setting] = User.get_default(setting)
+        except AttributeError:
+          logging.warning('Could not get default value for setting {!r}.'.format(setting))
+      else:
+        settings[setting] = getattr(self.user, setting)
+    return settings
 
   def _get_recent_ratios(self, timespans, numbers='values', modes=('p', 'w'), era=None):
     """Get ratios for only the last `timespan`s seconds."""

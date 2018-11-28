@@ -170,6 +170,34 @@ def clear(request):
   work_times.clear()
   return HttpResponseRedirect(reverse('worktime_main'))
 
+@require_post_and_cookie
+def settings(request):
+  params = QueryParams()
+  for setting in User.SETTINGS:
+    params.add(setting, choices=('on', 'off'))
+  params.add('site')
+  params.parse(request.POST)
+  if params['site']:
+    return warn_and_redirect_spambot('switchera', params['site'], reverse('worktime_main'))
+  if params.invalid_value:
+    log.warning('Invalid parameter.')
+    return HttpResponseRedirect(reverse('worktime_main'))
+  user = get_or_create_user(request)
+  assert user is not None
+  changed = False
+  for setting in User.SETTINGS:
+    if params[setting] is None:
+      continue
+    new_value = params[setting] == 'on'
+    current_value = getattr(user, setting, None)
+    if new_value != current_value:
+      log.info('Changing setting {!r} for user {} to {!r}'.format(setting, user, new_value))
+      setattr(user, setting, new_value)
+      changed = True
+  if changed:
+    user.save()
+  return HttpResponseRedirect(reverse('worktime_main'))
+
 
 ##### Helper functions #####
 
@@ -194,14 +222,12 @@ def get_or_create_user(request):
   cookie.save()
   return user
 
-
 def get_or_create_era(user, default_name):
   era, created = Era.objects.get_or_create(user=user, current=True)
   if created:
     era.description = default_name
     era.save()
   return era
-
 
 def warn_and_redirect_spambot(action, site, view_url=None):
   site_trunc = truncate(site)

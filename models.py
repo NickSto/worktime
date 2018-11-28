@@ -7,8 +7,6 @@ log = logging.getLogger(__name__)
 MODE_MAX_LEN = 63
 
 
-#TODO: Persistent preferences system.
-#      Maybe just add fields to the User model?
 #TODO: Link complementary `Adjustment`s where time is taken from one mode and added to another.
 #      Add a `OneToOneField` to `Adjustment` linking pairs of adjustments.
 #      - or maybe make a new `Adjustment` type for a move from one mode to another.
@@ -23,10 +21,24 @@ MODE_MAX_LEN = 63
 
 class User(ModelMixin, models.Model):
   name = models.CharField(max_length=255)
-  def __repr__(self):
-    return '{}(id={!r}, name={!r})'.format(type(self).__name__, self.id, self.name)
+  autoupdate = models.BooleanField(default=True)
+  abbrev = models.BooleanField(default=False)
+  SETTINGS = ('autoupdate', 'abbrev')
   def __str__(self):
     return self.name
+  def __repr__(self):
+    output = '{}(id={!r}, name={!r}'.format(type(self).__name__, self.id, self.name)
+    for name in self.SETTINGS:
+      value = getattr(self, name)
+      try:
+        default_value = self.get_default(name)
+        is_default = value == default_value
+      except AttributeError as error:
+        log.warning(error)
+        is_default = False
+      if not is_default:
+        output += ', {}={!r}'.format(name, value)
+    return output+')'
 
 class Era(ModelMixin, models.Model):
   user = models.ForeignKey(User, models.SET_NULL, null=True, blank=True)
