@@ -529,11 +529,15 @@ class WorkTimesDatabase(WorkTimes):
       assert new_era is not None
     new_era.current = True
     # Get the old era, make it not current anymore.
-    old_era = Era.objects.get(user=self.user, current=True)
-    old_era.current = False
+    try:
+      old_era = Era.objects.get(user=self.user, current=True)
+      old_era.current = False
+    except Era.DoesNotExist:
+      old_era = None
     # Commit changes.
     with transaction.atomic():
-      old_era.save()
+      if old_era is not None:
+        old_era.save()
       new_era.save()
     return True
 
