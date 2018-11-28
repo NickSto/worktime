@@ -281,7 +281,7 @@ function updateAdjustments(summary, adjustmentsBarElem, adjustmentLinesBarElem) 
     adjustmentElem.classList.add('adjustment');
     adjustmentElem.classList.add('mode-'+mode);
     adjustmentElem.style.left = adjustment.x+"%";
-    adjustmentElem.textContent = mode+" "+adjustment.sign+adjustment.magnitude;
+    adjustmentElem.textContent = mode+'\xa0'+adjustment.sign+adjustment.magnitude;
     adjustmentsBarElem.appendChild(adjustmentElem);
     // Make the indicator line.
     var adjustmentLineElem = document.createElement('span');

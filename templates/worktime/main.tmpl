@@ -33,7 +33,7 @@
             <div id="adjustments-bar">
               {% for adjustment in history.adjustments %}
                 <span class="adjustment mode-{{ adjustment.mode }}" style="left: {{ adjustment.x }}%">
-                  {{ adjustment.mode }} {{ adjustment.sign }}{{ adjustment.magnitude }}
+                  {{ adjustment.mode }}&nbsp;{{ adjustment.sign }}{{ adjustment.magnitude }}
                 </span>
               {% endfor %}
             </div>
