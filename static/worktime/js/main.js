@@ -6,7 +6,9 @@ function main() {
   unhideJSelems();
 
   var eraNameElem = document.getElementById('era-name');
+  var chooseEraElem = document.getElementById('choose-era');
   var eraSelectElem = document.getElementById('era-select');
+  var createEraPromptElem = document.getElementById('create-era-prompt');
   var modeTimeElem = document.getElementById('mode-time');
   var currentModeElem = document.getElementById('current-mode');
   var currentElapsedElem = document.getElementById('current-elapsed');
@@ -31,7 +33,7 @@ function main() {
     var summary = this.response;
     if (summary && summary.elapsed && summary.ratios) {
       unwarn(connectionWarningElem);
-      updateEras(summary, eraNameElem, eraSelectElem);
+      updateEras(summary, eraNameElem, eraSelectElem, chooseEraElem, createEraPromptElem);
       updateStatus(summary, modeTimeElem, currentModeElem, currentElapsedElem);
       updateTotals(summary, totalsElem);
       updateHistory(summary, historyTimespanElem, historyBarElem);
@@ -147,13 +149,18 @@ function attachFormListener(formListener) {
 
 /***** UPDATE DISPLAYED DATA *****/
 
-function updateEras(summary, eraNameElem, eraSelectElem) {
+function updateEras(summary, eraNameElem, eraSelectElem, chooseEraElem, createEraPromptElem) {
   if (summary.era) {
     eraNameElem.textContent = summary.era;
   } else {
     eraNameElem.textContent = "Worktime";
   }
-  if (summary.eras) {
+  if (summary.eras.length > 0) {
+    chooseEraElem.style.display = "initial";
+    if (createEraPromptElem.children.length > 0) {
+      removeChildren(createEraPromptElem);
+      createEraPromptElem.textContent = "Or start a new project:";
+    }
     removeChildren(eraSelectElem);
     for (var i = 0; i < summary.eras.length; i++) {
       var era = summary.eras[i];
@@ -161,6 +168,14 @@ function updateEras(summary, eraNameElem, eraSelectElem) {
       optionElem.value = era.id;
       optionElem.textContent = era.name;
       eraSelectElem.appendChild(optionElem);
+    }
+  } else {
+    chooseEraElem.style.display = "none";
+    if (createEraPromptElem.children.length === 0) {
+      createEraPromptElem.textContent = " a new project";
+      var strongElem = document.createElement("strong");
+      strongElem.textContent = "Start";
+      createEraPromptElem.prepend(strongElem);
     }
   }
 }

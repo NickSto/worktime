@@ -120,20 +120,18 @@
                 </form>
                 <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
                   {% csrf_token %}
-                  {% if eras %}
-                    <div id="choose-era">
-                      <p>
-                        <strong>Change</strong> project to:
-                      </p>
-                      <p>
-                        <select id="era-select" name="era">
-                          {% for era in eras %}
-                            <option value="{{ era.id }}">{{ era.name }}</option>
-                          {% endfor %}
-                        </select>
-                      </p>
-                    </div>
-                  {% endif %}
+                  <div id="choose-era" {% if not eras %}style="display: none"{% endif %}>
+                    <p>
+                      <strong>Change</strong> project to:
+                    </p>
+                    <p>
+                      <select id="era-select" name="era">
+                        {% for era in eras %}
+                          <option value="{{ era.id }}">{{ era.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </p>
+                  </div>
                   <div id="create-era">
                     <p id="create-era-prompt">
                       {% if eras %}
