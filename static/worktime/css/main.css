@@ -36,7 +36,7 @@
 
 /* When the screen is too small, stop the floats and go to one vertical column. */
 @media (max-width: 615px) {
-  .worktime-section {
+  .column {
     float: none !important;
   }
 }
@@ -150,13 +150,13 @@
   border-left: none;
 }
 
+.worktime-section form {
+  border: 1px solid #ddd;
+}
+
 #actions #switch-era {
   padding: 15px;
   border-bottom: none;
-}
-
-#actions form {
-  border: 1px solid #ddd;
 }
 
 #adjust {

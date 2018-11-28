@@ -56,124 +56,128 @@
             </div>
           </section> <!-- #history -->
           <div class="shrink-wrap">
-            <section id="stats" class="worktime-section pull-right">
-              <div id="status">
-                <h4>
-                  Current mode:
-                  <span id="mode-time" class="mode-{{ current_mode }}">
-                    <strong id="current-mode">
-                      {% if current_mode %}
-                        {{ current_mode }}
-                      {% else %}
-                        None
-                      {% endif %}
-                    </strong>
-                    <span id="current-elapsed">
-                      {% if current_mode != "None" %}
-                        {{ current_elapsed }}
-                      {% endif %}
-                    </span>
-                  </span>
-                </h4>
-              </div>
-              <div id="totals">
-                <h4>Totals</h4>
-                <table class="pane1 table-bordered table-condensed">
-                  <tbody id="totals-table">
-                    {% for elapsed_line in elapsed %}
-                      <tr>
-                        <td class="name dummy"></td>
-                        <td class="name">{{ elapsed_line.mode }}</td>
-                        <td class="value">{{ elapsed_line.time }}</td>
-                      </tr>
-                    {% endfor %}
-                    {% for ratio in ratios %}
-                      <tr>
-                        {% if forloop.first %}
-                          <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
+            <div class="column pull-right">
+              <section id="stats" class="worktime-section">
+                <div id="status">
+                  <h4>
+                    Current mode:
+                    <span id="mode-time" class="mode-{{ current_mode }}">
+                      <strong id="current-mode">
+                        {% if current_mode %}
+                          {{ current_mode }}
+                        {% else %}
+                          None
                         {% endif %}
-                        <td class="name">{{ ratio.timespan }}</td>
-                        <td class="value">{{ ratio.value }}</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </section> <!-- #stats -->
-            <section id="actions" class="worktime-section pull-left">
-              <h4>Actions</h4>
-              <form id="switch" class="list-group-item action-buttons" name='switch' method='post' action="{% url 'worktime:switch' %}">
-                {% csrf_token %}
-                <p>
-                  <strong>Switch</strong> mode to:
-                </p>
-                {% for mode in modes %}
-                  <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
-                    {{ mode }}
-                  </button>
-                {% endfor %}
-                <input class="ruhuman" name="site" type="text">
-                <input type="hidden" name="debug" value="{{ debug }}">
-              </form>
-              <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
-                {% csrf_token %}
-                {% if eras %}
-                  <div id="choose-era">
-                    <p>
-                      <strong>Change</strong> project to:
-                    </p>
-                    <p>
-                      <select id="era-select" name="era">
-                        {% for era in eras %}
-                          <option value="{{ era.id }}">{{ era.name }}</option>
-                        {% endfor %}
-                      </select>
-                    </p>
-                  </div>
-                {% endif %}
-                <div id="create-era">
-                  <p id="create-era-prompt">
-                    {% if eras %}
-                      Or start
-                    {% else %}
-                      <strong>Start</strong>
-                    {% endif %}
-                    a new project:
-                  </p>
-                  <p>
-                    <input name="new-era" type="text">
-                  </p>
+                      </strong>
+                      <span id="current-elapsed">
+                        {% if current_mode != "None" %}
+                          {{ current_elapsed }}
+                        {% endif %}
+                      </span>
+                    </span>
+                  </h4>
                 </div>
-                <input class="ruhuman" name="site" type="text">
-                <input type="hidden" name="debug" value="{{ debug }}">
-                <input class="btn btn-default ajaxable" type="submit" value="Submit">
-              </form>
-              <form id="adjust" name="adjust" method="post" action="{% url 'worktime:adjust' %}">
-                {% csrf_token %}
-                <div id="adjust-delta" class="pull-left">
-                  <span class="description"><strong>Adjust</strong> totals:</span>
-                  <p>
-                    <span class="verb">Add</span>
-                    <input name="add" type="text">
-                    <span class="preposition">to</span>
-                  </p>
-                  <p>
-                    <span class="verb">Subtract</span>
-                    <input name="subtract" type="text">
-                    <span class="preposition">from</span>
-                  </p>
+                <div id="totals">
+                  <h4>Totals</h4>
+                  <table class="pane1 table-bordered table-condensed">
+                    <tbody id="totals-table">
+                      {% for elapsed_line in elapsed %}
+                        <tr>
+                          <td class="name dummy"></td>
+                          <td class="name">{{ elapsed_line.mode }}</td>
+                          <td class="value">{{ elapsed_line.time }}</td>
+                        </tr>
+                      {% endfor %}
+                      {% for ratio in ratios %}
+                        <tr>
+                          {% if forloop.first %}
+                            <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
+                          {% endif %}
+                          <td class="name">{{ ratio.timespan }}</td>
+                          <td class="value">{{ ratio.value }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
-                <div id="adjust-mode" class="pull-right">
+              </section> <!-- #stats -->
+            </div> <!-- .column.pull-right -->
+            <div class="column pull-left">
+              <section id="actions" class="worktime-section">
+                <h4>Actions</h4>
+                <form id="switch" class="list-group-item action-buttons" name='switch' method='post' action="{% url 'worktime:switch' %}">
+                  {% csrf_token %}
+                  <p>
+                    <strong>Switch</strong> mode to:
+                  </p>
                   {% for mode in modes %}
                     <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
                       {{ mode }}
                     </button>
                   {% endfor %}
-                </div>
-                <input class="ruhuman" name="site" type="text">
-                <input type="hidden" name="debug" value="{{ debug }}">
-              </form>
-            </section> <!-- #actions -->
+                  <input class="ruhuman" name="site" type="text">
+                  <input type="hidden" name="debug" value="{{ debug }}">
+                </form>
+                <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
+                  {% csrf_token %}
+                  {% if eras %}
+                    <div id="choose-era">
+                      <p>
+                        <strong>Change</strong> project to:
+                      </p>
+                      <p>
+                        <select id="era-select" name="era">
+                          {% for era in eras %}
+                            <option value="{{ era.id }}">{{ era.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </p>
+                    </div>
+                  {% endif %}
+                  <div id="create-era">
+                    <p id="create-era-prompt">
+                      {% if eras %}
+                        Or start
+                      {% else %}
+                        <strong>Start</strong>
+                      {% endif %}
+                      a new project:
+                    </p>
+                    <p>
+                      <input name="new-era" type="text">
+                    </p>
+                  </div>
+                  <input class="ruhuman" name="site" type="text">
+                  <input type="hidden" name="debug" value="{{ debug }}">
+                  <input class="btn btn-default ajaxable" type="submit" value="Submit">
+                </form>
+                <form id="adjust" name="adjust" method="post" action="{% url 'worktime:adjust' %}">
+                  {% csrf_token %}
+                  <div id="adjust-delta" class="pull-left">
+                    <span class="description"><strong>Adjust</strong> totals:</span>
+                    <p>
+                      <span class="verb">Add</span>
+                      <input name="add" type="text">
+                      <span class="preposition">to</span>
+                    </p>
+                    <p>
+                      <span class="verb">Subtract</span>
+                      <input name="subtract" type="text">
+                      <span class="preposition">from</span>
+                    </p>
+                  </div>
+                  <div id="adjust-mode" class="pull-right">
+                    {% for mode in modes %}
+                      <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
+                        {{ mode }}
+                      </button>
+                    {% endfor %}
+                  </div>
+                  <input class="ruhuman" name="site" type="text">
+                  <input type="hidden" name="debug" value="{{ debug }}">
+                </form>
+              </section> <!-- #actions -->
+            </div> <!-- .column.pull-left -->
           </div>  <!-- .shrink-wrap -->
         </div> <!-- .panel-body -->
       </section>
