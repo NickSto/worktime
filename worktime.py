@@ -15,10 +15,12 @@ try:
   from django.db import transaction
 except ImportError:
   pass
+log = logging.getLogger(__file__)
 assert sys.version_info.major >= 3, 'Python 3 required'
 
 MODES  = ['w','p','n','s']
 HIDDEN = ['s']
+MODE_NAMES = {'w':'work', 'p':'play', 'n':'neutral', 's':'stopped'}
 DATA_DIR     = pathlib.Path('~/.local/share/nbsdata').expanduser()
 LOG_PATH     = DATA_DIR / 'worklog.txt'
 STATUS_PATH  = DATA_DIR / 'workstatus.txt'
@@ -53,6 +55,8 @@ def make_argparser():
     help='Report feedback to desktop notifications.')
   parser.add_argument('-O', '--no-stdout', dest='stdout', action='store_false', default=True,
     help='Don\'t print feedback to stdout.')
+  parser.add_argument('-A', '--no-abbrev', dest='abbrev', action='store_false', default=True,
+    help='Don\'t abbreviate mode names (show "work" instead of "w").')
   parser.add_argument('-w', '--web', action='store_true',
     help='Use the website ({}) as the history log instead of local files.'.format(API_ENDPOINT))
   parser.add_argument('-c', '--cookie',
@@ -80,10 +84,10 @@ def main(argv):
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
   if args.web or args.url != API_ENDPOINT:
-    work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN, api_endpoint=args.url,
+    work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN, abbrev=args.abbrev, api_endpoint=args.url,
                               timeout=TIMEOUT, verify=args.verify, cookie=args.cookie)
   else:
-    work_times = WorkTimesFiles(modes=MODES, hidden=HIDDEN,
+    work_times = WorkTimesFiles(modes=MODES, hidden=HIDDEN, abbrev=args.abbrev,
                                 log_path=LOG_PATH, status_path=STATUS_PATH)
 
   if args.arguments[0] in MODES:
@@ -161,7 +165,7 @@ def make_report(summary, message=None):
   body = '\n'.join(lines)
   # If requested, calculate the ratio of the times for the specified modes.
   for ratio in summary['ratios']:
-    if ratio['timespan'] == float('inf'):
+    if ratio['timespan'] == float('inf') and ratio['value'] is not None:
       if ratio['value'] == float('inf'):
         ratio_value_str = '∞'
       else:
@@ -270,9 +274,10 @@ class WorkTimes(object):
   """The parent class, agnostic to backend data store.
   Most methods are unimplemented, since they depend on the data source."""
 
-  def __init__(self, modes=MODES, hidden=HIDDEN):
+  def __init__(self, modes=MODES, hidden=HIDDEN, abbrev=True):
     self.modes = modes
     self.hidden = hidden
+    self.abbrev = abbrev
 
   def clear(self):
     """Erase all history and the current status."""
@@ -304,6 +309,8 @@ class WorkTimes(object):
     elif numbers == 'text':
       summary['current_mode'] = str(current_mode)
       summary['current_elapsed'] = timestring(elapsed)
+    if not self.abbrev:
+      summary['current_mode'] = MODE_NAMES.get(summary['current_mode'], summary['current_mode'])
     # Get all the elapsed times and add the time of the current mode to them.
     all_elapsed = self.get_all_elapsed()
     if current_mode:
@@ -321,10 +328,17 @@ class WorkTimes(object):
           elapsed_data = {'mode':mode, 'time':all_elapsed[mode]}
         elif numbers == 'text':
           elapsed_data = {'mode':mode, 'time':timestring(all_elapsed[mode])}
+        if not self.abbrev:
+          elapsed_data['mode'] = MODE_NAMES.get(elapsed_data['mode'], elapsed_data['mode'])
         summary['elapsed'].append(elapsed_data)
     # If requested, calculate the ratio of the times for the specified modes.
     if modes:
-      summary['ratio_str'] = '{}/{}'.format(modes[0], modes[1])
+      if self.abbrev:
+        summary['ratio_str'] = '{}/{}'.format(modes[0], modes[1])
+      else:
+        mode0 = MODE_NAMES.get(modes[0], modes[0])
+        mode1 = MODE_NAMES.get(modes[1], modes[1])
+        summary['ratio_str'] = '{}/{}'.format(mode0, mode1)
       if modes[0] not in all_elapsed and modes[1] not in all_elapsed:
         ratio_value = None
       elif all_elapsed.get(modes[1], 0) == 0:
@@ -379,8 +393,9 @@ class WorkTimes(object):
 
 class WorkTimesFiles(WorkTimes):
 
-  def __init__(self, modes=MODES, hidden=HIDDEN, log_path=LOG_PATH, status_path=STATUS_PATH):
-    super().__init__(modes=modes, hidden=hidden)
+  def __init__(self, modes=MODES, hidden=HIDDEN, abbrev=True,
+               log_path=LOG_PATH, status_path=STATUS_PATH):
+    super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     if isinstance(log_path, pathlib.Path):
       self.log_path = log_path
     else:
@@ -488,8 +503,8 @@ class WorkTimesFiles(WorkTimes):
 
 class WorkTimesDatabase(WorkTimes):
 
-  def __init__(self, user=None, modes=MODES, hidden=HIDDEN):
-    super().__init__(modes=modes, hidden=hidden)
+  def __init__(self, user=None, modes=MODES, hidden=HIDDEN, abbrev=True):
+    super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     self.user = user
 
   def clear(self, new_description=''):
@@ -651,7 +666,10 @@ class WorkTimesDatabase(WorkTimes):
 
   def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
-    summary['modes'] = self.modes
+    if self.abbrev:
+      summary['modes'] = self.modes
+    else:
+      summary['modes'] = [MODE_NAMES.get(mode, mode) for mode in self.modes]
     try:
       era = Era.objects.get(user=self.user, current=True)
       summary['era'] = era.description
@@ -860,9 +878,10 @@ class WorkTimesDatabase(WorkTimes):
 
 class WorkTimesWeb(WorkTimes):
 
-  def __init__(self, modes=MODES, hidden=HIDDEN,
+  def __init__(self, modes=MODES, hidden=HIDDEN, abbrev=True,
                api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True, cookie=None):
-    super().__init__(modes=modes, hidden=hidden)
+    super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
+    #TODO: Actually support abbrev.
     self.api_endpoint = api_endpoint
     self.timeout = timeout
     self.verify = verify
