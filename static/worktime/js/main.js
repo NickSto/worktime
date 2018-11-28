@@ -22,6 +22,11 @@ function main() {
   var adjustmentsBarElem = document.getElementById('adjustments-bar');
   var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
   var settingsElem = document.getElementById('settings');
+  var autoUpdateToggleElem = document.getElementById('autoupdate-toggle');
+
+  if (autoUpdateToggleElem.textContent === "off") {
+    autoUpdate = false;
+  }
 
   var lastUpdate = Date.now()/1000;
   connectionElem.textContent = "Current";
@@ -109,6 +114,21 @@ function main() {
     clearFields(fields);
   }
 
+  function toggleAutoUpdate(event) {
+    if (event.target.value === "on") {
+      autoUpdate = true;
+    } else if (event.target.value === "off") {
+      autoUpdate = false;
+    }
+    submitForm(event);
+    if (autoUpdate) {
+      activateToggle(event.target);
+    } else {
+      deactivateToggle(event.target);
+    }
+  };
+
+  autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
   attachFormListener(submitForm);
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
@@ -325,18 +345,24 @@ function updateSettings(summary, settingsElem) {
     }
     if (field.tagName === "BUTTON") {
       if (value === true) {
-        field.textContent = "on";
-        field.value = "off";
-        field.classList.add("active");
+        activateToggle(field);
       } else if (value === false) {
-        field.textContent = "off";
-        field.value = "on";
-        field.classList.remove("active");
+        deactivateToggle(field);
       }
     }
   }
-  autoUpdate = summary.settings.autoupdate;
-  //TODO: Do an update immediately if switched to true.
+}
+
+function activateToggle(buttonElem) {
+  buttonElem.textContent = "on";
+  buttonElem.value = "off";
+  buttonElem.classList.add("active");
+}
+
+function deactivateToggle(buttonElem) {
+  buttonElem.textContent = "off";
+  buttonElem.value = "on";
+  buttonElem.classList.remove("active");
 }
 
 function removeChildren(element) {

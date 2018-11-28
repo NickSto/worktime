@@ -182,9 +182,9 @@
                   <input class="ruhuman" name="site" type="text">
                   <p class="javascript-only">
                     {% if settings.autoupdate %}
-                      <button class="btn btn-default ajaxable active" name="autoupdate" value="off">on</button>
+                      <button class="btn btn-default active" name="autoupdate" value="off" id="autoupdate-toggle">on</button>
                     {% else %}
-                      <button class="btn btn-default ajaxable" name="autoupdate" value="on">off</button>
+                      <button class="btn btn-default" name="autoupdate" value="on" id="autoupdate-toggle">off</button>
                     {% endif %}
                     Auto-update
                   </p>
