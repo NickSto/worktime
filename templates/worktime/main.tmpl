@@ -21,12 +21,12 @@
               Worktime
             {% endif %}
           </h3>
-        </div>
+        </div> <!-- .panel-heading -->
         <div class="panel-body">
           <section id="connection" class="pull-right">
             <p id="connection-status"></p>
             <p id="connection-warning"></p>
-          </section>
+          </section> <!-- #connection -->
           <section id="history" class="worktime-section">
             <h4>History</h4>
             <p id="history-timespan">Past {{ history.timespan }}:</p>
@@ -54,7 +54,7 @@
            -->{% empty %}<span class="period mode-None" style="width: 99%" data-index="0"></span>
               {% endfor %}
             </div>
-          </section>
+          </section> <!-- #history -->
           <div class="shrink-wrap">
             <section id="stats" class="worktime-section pull-right">
               <div id="status">
@@ -99,7 +99,7 @@
                   </tbody>
                 </table>
               </div>
-            </section>
+            </section> <!-- #stats -->
             <section id="actions" class="worktime-section pull-left">
               <h4>Actions</h4>
               <form id="switch" class="list-group-item action-buttons" name='switch' method='post' action="{% url 'worktime:switch' %}">
@@ -173,9 +173,9 @@
                 <input class="ruhuman" name="site" type="text">
                 <input type="hidden" name="debug" value="{{ debug }}">
               </form>
-            </section>
-          </div>
-        </div>
+            </section> <!-- #actions -->
+          </div>  <!-- .shrink-wrap -->
+        </div> <!-- .panel-body -->
       </section>
 
     </div>
