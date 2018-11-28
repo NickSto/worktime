@@ -1,7 +1,9 @@
-//TODO: Add a button to turn off auto-updating (when debug=true).
 //TODO: Scroll buttons under the history bar?
 
+var autoUpdate = true;
+
 function main() {
+  unhideJSelems();
 
   var eraNameElem = document.getElementById('era-name');
   var eraSelectElem = document.getElementById('era-select');
@@ -17,6 +19,7 @@ function main() {
   var connectionWarningElem = document.getElementById('connection-warning');
   var adjustmentsBarElem = document.getElementById('adjustments-bar');
   var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
+  var autoUpdateButtonElem = document.getElementById('auto-update-button');
 
   var lastUpdate = Date.now()/1000;
   connectionElem.textContent = "Current";
@@ -84,7 +87,7 @@ function main() {
     // Only update when the tab is visible.
     // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
     // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
-    if (!document.hidden) {
+    if (autoUpdate && !document.hidden) {
       makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
     }
   }
@@ -102,8 +105,8 @@ function main() {
     clearForm(formElem);
   }
 
+  autoUpdateButtonElem.addEventListener("click", toggleAutoUpdate)
   attachFormListener(submitForm);
-
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
   window.setInterval(updateSummary, 30*1000);
@@ -423,6 +426,36 @@ function flashWarning(message, warningElem, timespan) {
 
 function formFailureWarn() {
   flashWarning("Connection error. Action failed.")
+}
+
+function unhideJSelems() {
+  var jsElems = document.getElementsByClassName('javascript-only');
+  for (var i = 0; i < jsElems.length; i++) {
+    //TODO: Maybe just remove the 'javascript-only' class from the element?
+    //      But that's not idempotent, which doesn't seem great.
+    jsElems[i].style.display = "initial";
+  }
+}
+
+function toggleAutoUpdate(event) {
+  var autoUpdateButtonElem = event.target;
+  if (autoUpdateButtonElem.id != 'auto-update-button') {
+    return false;
+  }
+  //TODO: Send to server to persist preference.
+  event.preventDefault();
+  if (autoUpdateButtonElem.value === "off") {
+    autoUpdate = false;
+    autoUpdateButtonElem.value = "on";
+    autoUpdateButtonElem.textContent = "off";
+    autoUpdateButtonElem.classList.remove("active");
+  } else if (autoUpdateButtonElem.value === "on") {
+    autoUpdate = true;
+    autoUpdateButtonElem.value = "off";
+    autoUpdateButtonElem.textContent = "on";
+    autoUpdateButtonElem.classList.add("active");
+    //TODO: Do an update immediately.
+  }
 }
 
 function humanTime(seconds) {

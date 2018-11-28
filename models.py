@@ -6,6 +6,21 @@ from utils import ModelMixin
 log = logging.getLogger(__name__)
 MODE_MAX_LEN = 63
 
+
+#TODO: Persistent preferences system.
+#      Maybe just add fields to the User model?
+#TODO: Link complementary `Adjustment`s where time is taken from one mode and added to another.
+#      Add a `OneToOneField` to `Adjustment` linking pairs of adjustments.
+#      - or maybe make a new `Adjustment` type for a move from one mode to another.
+#      Add UI for "Move [ ] from [ ] to [ ]".
+#      - might have to progressively enhance a set of radio buttons for selecting the from mode.
+#        - can't style radio buttons to look like the other buttons on the page.
+#        - might have to leave the ugly radios there in the javascript-free version
+#      Represent the link in the summary data structure.
+#      Display in the Adjustments bar.
+#      - use the color of the mode being added to
+#      - maybe special text, like "w <- 4 <- p"
+
 class User(ModelMixin, models.Model):
   name = models.CharField(max_length=255)
   def __repr__(self):

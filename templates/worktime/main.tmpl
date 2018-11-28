@@ -177,6 +177,16 @@
                   <input type="hidden" name="debug" value="{{ debug }}">
                 </form>
               </section> <!-- #actions -->
+              <section id="settings" class="worktime-section">
+                <h4>Settings</h4>
+                <form name="settings">
+                  {% csrf_token %}
+                  <p class="javascript-only">
+                    <button class="btn btn-default active" name="autoupdate" value="off" id="auto-update-button">on</button>
+                    Auto-update
+                  </p>
+                </form>
+              </section> <!-- #settings -->
             </div> <!-- .column.pull-left -->
           </div>  <!-- .shrink-wrap -->
         </div> <!-- .panel-body -->

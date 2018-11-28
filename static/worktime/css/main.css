@@ -1,4 +1,8 @@
 
+.javascript-only {
+  display: none;
+}
+
 .shrink-wrap {
   display: inline-block;
   width: auto;
@@ -157,6 +161,10 @@
 #actions #switch-era {
   padding: 15px;
   border-bottom: none;
+}
+
+#settings form {
+  padding: 15px 15px 5px 15px;
 }
 
 #adjust {
