@@ -1,127 +1,24 @@
 //TODO: Scroll buttons under the history bar?
 
 var autoUpdate = true;
+var lastUpdate = Date.now()/1000;
 
 function main() {
   unhideJSelems();
 
-  var statsElem = document.getElementById('stats');
-  var historyElem = document.getElementById('history');
   var historyBarElem = document.getElementById('history-bar');
   var connectionElem = document.getElementById('connection-status');
-  var connectionWarningElem = document.getElementById('connection-warning');
   var adjustmentsBarElem = document.getElementById('adjustments-bar');
   var autoUpdateToggleElem = document.getElementById('autoupdate-toggle');
+
+  connectionElem.textContent = "Current";
+  flashGreen(connectionElem);
 
   if (autoUpdateToggleElem.textContent === "off") {
     autoUpdate = false;
   }
-
-  var lastUpdate = Date.now()/1000;
-  connectionElem.textContent = "Current";
-  flashGreen(connectionElem);
-
-  //TODO: I think we can move this out of main() at this point.
-  function applySummary() {
-    // Insert the new data into the page.
-    // Called once the XMLHttpRequest has gotten a response.
-    var summary = this.response;
-    if (summary && summary.elapsed && summary.ratios) {
-      unwarn(connectionWarningElem);
-      updateEras(summary);
-      updateStatus(summary);
-      updateTotals(summary);
-      updateHistory(summary, historyBarElem);
-      updateAdjustments(summary, adjustmentsBarElem);
-      updateSettings(summary);
-      lastUpdate = Date.now()/1000;
-      /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
-       *      Symptoms: on mobile devices, I switch back to the tab after a long time and the info
-       *      is definitely out of date, but the display says it's only a few seconds old.
-       *      Is `if (summary)` not properly detecting the failure? Doesn't seem like it.
-       *      Maybe it actually did get a response, but didn't properly update the display?
-       */
-    } else if (summary) {
-      warn(connectionWarningElem, "Invalid summary object returned");
-    } else {
-      warn(connectionWarningElem, "No summary object returned");
-    }
-  }
-
-  function updateConnection() {
-    var params = getQueryParams();
-    var debug = params["debug"];
-    var now = Date.now()/1000;
-    var age = now - lastUpdate;
-    /* Set the age text. */
-    var humanAge = humanTime(age);
-    var content = humanAge+" ago";
-    if (age < 60) {
-      connectionElem.style.color = "initial";
-    } else {
-      content += "!";
-      connectionElem.style.color = "red";
-    }
-    if (debug) {
-      content = Math.round(now) + " - " + Math.round(lastUpdate) + " = " + content;
-    }
-    connectionElem.textContent = content;
-    if (age <= 1) {
-      flashGreen(connectionElem);
-    }
-    /* Fade out the status info as it gets out of date. */
-    var opacity = getOpacity(age);
-    statsElem.style.opacity = opacity;
-    historyElem.style.opacity = opacity;
-    //TODO: Could add a bar to the history display representing the unknown period since the last
-    //      update. Color it something weird like purple.
-  }
-
-  function connectionWarn(event) {
-    warn(connectionWarningElem, "Could not connect to server");
-  }
-
-  function updateSummary() {
-    // Only update when the tab is visible.
-    // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
-    // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
-    if (autoUpdate && !document.hidden) {
-      makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
-    }
-  }
-
-  function submitForm(event) {
-    event.preventDefault();
-    // Find the enclosing form element.
-    var formElem = getAncestor(event.target, "FORM");
-    var form = new FormData(formElem);
-    // Make sure to include which button was clicked, if there was one.
-    if (event.target.tagName === "BUTTON" && event.target.name) {
-      form.append(event.target.name, event.target.value);
-    }
-    makeRequest("POST", formElem.action, updateSummary, formFailureWarn, form);
-    var fields = getFormFields(formElem);
-    clearFields(fields);
-  }
-
-  function toggleAutoUpdate(event) {
-    // Handle clicks of the Auto-update setting specially:
-    // Send the update to the server, but only let the client change the client state.
-    // Avoids conflicts and race conditions between the server and client state.
-    if (event.target.value === "on") {
-      autoUpdate = true;
-    } else if (event.target.value === "off") {
-      autoUpdate = false;
-    }
-    submitForm(event);
-    if (autoUpdate) {
-      activateToggle(event.target);
-    } else {
-      deactivateToggle(event.target);
-    }
-  };
-
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
+
   attachFormListener(submitForm);
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
@@ -130,19 +27,76 @@ function main() {
   document.addEventListener('visibilitychange', updateSummary, false);
 }
 
-function makeRequest(method, url, callback, errorCallback, data) {
-  var request = new XMLHttpRequest();
-  request.responseType = 'json';
-  request.addEventListener('load', callback, true);
-  if (errorCallback) {
-    request.addEventListener('error', errorCallback, true);
+function updateSummary() {
+  // Only update when the tab is visible.
+  // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
+  // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+  function connectionWarn(event) {
+    var connectionWarningElem = document.getElementById('connection-warning');
+    warn(connectionWarningElem, "Could not connect to server");
   }
-  request.open(method, url);
-  if (data === undefined) {
-    request.send();
+  if (autoUpdate && !document.hidden) {
+    makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
+  }
+}
+
+function applySummary() {
+  // Insert the new data into the page.
+  // Called once the XMLHttpRequest has gotten a response.
+  var connectionWarningElem = document.getElementById('connection-warning');
+  var summary = this.response;
+  if (summary && summary.elapsed && summary.ratios) {
+    unwarn(connectionWarningElem);
+    updateEras(summary);
+    updateStatus(summary);
+    updateTotals(summary);
+    updateHistory(summary);
+    updateAdjustments(summary);
+    updateSettings(summary);
+    lastUpdate = Date.now()/1000;
+    /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
+     *      Symptoms: on mobile devices, I switch back to the tab after a long time and the info
+     *      is definitely out of date, but the display says it's only a few seconds old.
+     *      Is `if (summary)` not properly detecting the failure? Doesn't seem like it.
+     *      Maybe it actually did get a response, but didn't properly update the display?
+     */
+  } else if (summary) {
+    warn(connectionWarningElem, "Invalid summary object returned");
   } else {
-    request.send(data);
+    warn(connectionWarningElem, "No summary object returned");
   }
+}
+
+function updateConnection() {
+  var statsElem = document.getElementById('stats');
+  var historyElem = document.getElementById('history');
+  var connectionElem = document.getElementById('connection-status');
+  var params = getQueryParams();
+  var debug = params["debug"];
+  var now = Date.now()/1000;
+  var age = now - lastUpdate;
+  /* Set the age text. */
+  var humanAge = humanTime(age);
+  var content = humanAge+" ago";
+  if (age < 60) {
+    connectionElem.style.color = "initial";
+  } else {
+    content += "!";
+    connectionElem.style.color = "red";
+  }
+  if (debug) {
+    content = Math.round(now) + " - " + Math.round(lastUpdate) + " = " + content;
+  }
+  connectionElem.textContent = content;
+  if (age <= 1) {
+    flashGreen(connectionElem);
+  }
+  /* Fade out the status info as it gets out of date. */
+  var opacity = getOpacity(age);
+  statsElem.style.opacity = opacity;
+  historyElem.style.opacity = opacity;
+  //TODO: Could add a bar to the history display representing the unknown period since the last
+  //      update. Color it something weird like purple.
 }
 
 function attachFormListener(formListener) {
@@ -158,6 +112,23 @@ function attachFormListener(formListener) {
     }
   }
 }
+
+function toggleAutoUpdate(event) {
+  // Handle clicks of the Auto-update setting specially:
+  // Send the update to the server, but only let the client change the client state.
+  // Avoids conflicts and race conditions between the server and client state.
+  if (event.target.value === "on") {
+    autoUpdate = true;
+  } else if (event.target.value === "off") {
+    autoUpdate = false;
+  }
+  submitForm(event);
+  if (autoUpdate) {
+    activateToggle(event.target);
+  } else {
+    deactivateToggle(event.target);
+  }
+};
 
 
 /***** UPDATE DISPLAYED DATA *****/
@@ -257,7 +228,8 @@ function makeRow(name1, name2, value, rowspan) {
   return row;
 }
 
-function updateHistory(summary, historyBarElem) {
+function updateHistory(summary) {
+  var historyBarElem = document.getElementById('history-bar');
   var historyTimespanElem = document.getElementById('history-timespan');
   if (!summary.history) {
     return;
@@ -307,7 +279,8 @@ function updateHistory(summary, historyBarElem) {
   }
 }
 
-function updateAdjustments(summary, adjustmentsBarElem) {
+function updateAdjustments(summary) {
+  var adjustmentsBarElem = document.getElementById('adjustments-bar');
   var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
   removeChildren(adjustmentsBarElem);
   removeChildren(adjustmentLinesBarElem);
@@ -546,6 +519,21 @@ function formatTime(quantity, unit) {
   return output;
 }
 
+function makeRequest(method, url, callback, errorCallback, data) {
+  var request = new XMLHttpRequest();
+  request.responseType = 'json';
+  request.addEventListener('load', callback, true);
+  if (errorCallback) {
+    request.addEventListener('error', errorCallback, true);
+  }
+  request.open(method, url);
+  if (data === undefined) {
+    request.send();
+  } else {
+    request.send(data);
+  }
+}
+
 function getAncestor(descendent, ancestorTag) {
   // Find the enclosing <ancestorTag> element of descendent.
   var elem = descendent;
@@ -558,6 +546,20 @@ function getAncestor(descendent, ancestorTag) {
   } else {
     return elem;
   }
+}
+
+function submitForm(event) {
+  event.preventDefault();
+  // Find the enclosing form element.
+  var formElem = getAncestor(event.target, "FORM");
+  var form = new FormData(formElem);
+  // Make sure to include which button was clicked, if there was one.
+  if (event.target.tagName === "BUTTON" && event.target.name) {
+    form.append(event.target.name, event.target.value);
+  }
+  makeRequest("POST", formElem.action, updateSummary, formFailureWarn, form);
+  var fields = getFormFields(formElem);
+  clearFields(fields);
 }
 
 function getFormFields(rootNode) {
