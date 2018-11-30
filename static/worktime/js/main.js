@@ -21,6 +21,7 @@ function main() {
   connectionElem.textContent = "Current";
   flashGreen(connectionElem);
 
+  //TODO: I think we can move this out of main() at this point.
   function applySummary() {
     // Insert the new data into the page.
     // Called once the XMLHttpRequest has gotten a response.
@@ -104,6 +105,9 @@ function main() {
   }
 
   function toggleAutoUpdate(event) {
+    // Handle clicks of the Auto-update setting specially:
+    // Send the update to the server, but only let the client change the client state.
+    // Avoids conflicts and race conditions between the server and client state.
     if (event.target.value === "on") {
       autoUpdate = true;
     } else if (event.target.value === "off") {
@@ -340,7 +344,8 @@ function updateSettings(summary, settingsElem) {
     var field = fields[i];
     var setting = field.name;
     var value = summary.settings[setting];
-    if (value === undefined) {
+    // Don't let the server alter the autoupdate setting on the client.
+    if (setting === 'autoupdate' || value === undefined) {
       continue;
     }
     if (field.tagName === "BUTTON") {
