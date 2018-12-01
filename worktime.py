@@ -21,6 +21,7 @@ assert sys.version_info.major >= 3, 'Python 3 required'
 MODES  = ['w','p','n','s']
 HIDDEN = ['s']
 MODE_NAMES = {'w':'work', 'p':'play', 'n':'neutral', 's':'stopped'}
+OPPOSITES = {'p':'w', 'w':'p'}
 DATA_DIR     = pathlib.Path('~/.local/share/nbsdata').expanduser()
 LOG_PATH     = DATA_DIR / 'worklog.txt'
 STATUS_PATH  = DATA_DIR / 'workstatus.txt'

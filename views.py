@@ -7,7 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Era, Period, User, Cookie
-from .worktime import MODES, WorkTimesDatabase, timestring
+from .worktime import MODES, MODE_NAMES, OPPOSITES, WorkTimesDatabase, timestring
 from utils.queryparams import QueryParams, boolish
 log = logging.getLogger(__name__)
 
@@ -15,7 +15,6 @@ HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
 DEFAULT_ERA_NAME = 'Project 1'
 COLORS = {'p':'red', 'w':'green', 'n':'bluegray'}
-OPPOSITES = {'p':'w', 'w':'p'}
 
 #TODO: Improve experience for first-time visitors:
 #      1. Write some introduction at the top.
@@ -57,9 +56,11 @@ def main(request):
   user = get_user(request)
   work_times = WorkTimesDatabase(user)
   summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
-  summary['debug'] = params['debug']
-  summary['meta'] = {'colors':COLORS, 'opposites':OPPOSITES}
+  #TODO: Provide metadata via a separate API?
+  #      Then the client can just fetch it once per session.
+  summary['meta'] = {'colors':COLORS, 'opposites':OPPOSITES, 'names':MODE_NAMES}
   if params['format'] == 'html':
+    summary['debug'] = params['debug']
     apply_colors(summary, COLORS)
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':
@@ -210,10 +211,12 @@ def apply_colors(summary, colors):
   for period in summary['history']['periods']:
     period['color'] = colors.get(period['mode'])
   for adjustment in summary['history']['adjustments']:
-    if adjustment['sign'] == '-' and adjustment['mode'] in OPPOSITES:
-      adjustment['color'] = colors.get(OPPOSITES[adjustment['mode']])
+    mode = adjustment['mode']
+    if adjustment['sign'] == '-':
+      effective_mode = summary['meta']['opposites'].get(mode, mode)
     else:
-      adjustment['color'] = colors.get(adjustment['mode'])
+      effective_mode = mode
+    adjustment['color'] = colors.get(effective_mode)
 
 def get_user(request):
   cookie_value = request.COOKIES.get(COOKIE_NAME)
