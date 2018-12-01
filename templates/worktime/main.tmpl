@@ -63,8 +63,8 @@
                     Current mode:
                     <span id="mode-time" class="mode-{{ current_mode }} color-{{ current_color }}">
                       <strong id="current-mode">
-                        {% if current_mode %}
-                          {{ current_mode }}
+                        {% if current_mode_name %}
+                          {{ current_mode_name }}
                         {% else %}
                           None
                         {% endif %}
@@ -84,7 +84,7 @@
                       {% for elapsed_line in elapsed %}
                         <tr>
                           <td class="name dummy"></td>
-                          <td class="name">{{ elapsed_line.mode }}</td>
+                          <td class="name">{{ elapsed_line.mode_name }}</td>
                           <td class="value">{{ elapsed_line.time }}</td>
                         </tr>
                       {% endfor %}
@@ -110,9 +110,9 @@
                   <p>
                     <strong>Switch</strong> mode to:
                   </p>
-                  {% for mode in modes %}
-                    <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
-                      {{ mode }}
+                  {% for mode in modes_list %}
+                    <button class="btn btn-default ajaxable" name="mode" value="{{ mode.abbrev }}">
+                      {{ mode.disp_name }}
                     </button>
                   {% endfor %}
                   <input class="ruhuman" name="site" type="text">
@@ -164,10 +164,10 @@
                       <span class="preposition">from</span>
                     </p>
                   </div>
-                  <div id="adjust-mode" class="pull-right">
-                    {% for mode in modes %}
-                      <button class="btn btn-default ajaxable" name="mode" value="{{ mode }}">
-                        {{ mode }}
+                  <div id="adjust-mode" class="pull-left">
+                    {% for mode in modes_list %}
+                      <button class="btn btn-default ajaxable" name="mode" value="{{ mode.abbrev }}">
+                        {{ mode.disp_name }}
                       </button>
                     {% endfor %}
                   </div>
@@ -188,7 +188,6 @@
                     {% endif %}
                     Auto-update
                   </p>
-                  {% comment "For when abbreviation-off feature is implemented." %}
                   <p>
                     {% if settings.abbrev %}
                       <button class="btn btn-default ajaxable active" name="abbrev" value="off">on</button>
@@ -197,7 +196,6 @@
                     {% endif %}
                     Abbreviate modes
                   </p>
-                  {% endcomment %}
                 </form>
               </section> <!-- #settings -->
             </div> <!-- .column.pull-left -->

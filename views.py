@@ -7,7 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Era, Period, User, Cookie
-from .worktime import MODES, MODE_NAMES, OPPOSITES, WorkTimesDatabase, timestring
+from .worktime import MODES, MODES_META, WorkTimesDatabase, timestring
 from utils.queryparams import QueryParams, boolish
 log = logging.getLogger(__name__)
 
@@ -54,14 +54,17 @@ def main(request):
   params.add('debug', type=boolish)
   params.parse(request.GET)
   user = get_user(request)
-  work_times = WorkTimesDatabase(user)
+  abbrev = getattr(user, 'abbrev', User.get_default('abbrev'))
+  work_times = WorkTimesDatabase(user, abbrev=abbrev)
   summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
   #TODO: Provide metadata via a separate API?
   #      Then the client can just fetch it once per session.
-  summary['meta'] = {'colors':COLORS, 'opposites':OPPOSITES, 'names':MODE_NAMES}
+  summary['modes'] = MODES
+  summary['modes_meta'] = MODES_META
+  apply_colors(summary, COLORS)
   if params['format'] == 'html':
     summary['debug'] = params['debug']
-    apply_colors(summary, COLORS)
+    summary['modes_list'] = make_mode_list(MODES, MODES_META, abbrev)
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':
     return HttpResponse(json.dumps(summary), content_type='application/json')
@@ -207,16 +210,29 @@ def settings(request):
 ##### Helper functions #####
 
 def apply_colors(summary, colors):
+  for mode, mode_data in summary['modes_meta'].items():
+    mode_data['color'] = colors.get(mode)
   summary['current_color'] = colors.get(summary['current_mode'])
   for period in summary['history']['periods']:
     period['color'] = colors.get(period['mode'])
   for adjustment in summary['history']['adjustments']:
     mode = adjustment['mode']
+    effective_mode = mode
     if adjustment['sign'] == '-':
-      effective_mode = summary['meta']['opposites'].get(mode, mode)
-    else:
-      effective_mode = mode
+      if mode in summary['modes_meta'] and summary['modes_meta'][mode].get('opposite'):
+        effective_mode = summary['modes_meta'][mode]['opposite']
     adjustment['color'] = colors.get(effective_mode)
+
+def make_mode_list(modes, modes_meta, abbrev):
+  mode_list = []
+  for mode in modes:
+    mode_data = modes_meta[mode]
+    if abbrev:
+      mode_data['disp_name'] = mode
+    else:
+      mode_data['disp_name'] = mode_data['name']
+    mode_list.append(mode_data)
+  return mode_list
 
 def get_user(request):
   cookie_value = request.COOKIES.get(COOKIE_NAME)

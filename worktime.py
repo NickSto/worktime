@@ -15,13 +15,16 @@ try:
   from django.db import transaction
 except ImportError:
   pass
-log = logging.getLogger(__file__)
 assert sys.version_info.major >= 3, 'Python 3 required'
 
 MODES  = ['w','p','n','s']
-HIDDEN = ['s']
-MODE_NAMES = {'w':'work', 'p':'play', 'n':'neutral', 's':'stopped'}
-OPPOSITES = {'p':'w', 'w':'p'}
+MODES_META = {
+  'w': {'abbrev':'w', 'name':'work', 'hidden':False, 'opposite':'p'},
+  'p': {'abbrev':'p', 'name':'play', 'hidden':False, 'opposite':'w'},
+  'n': {'abbrev':'n', 'name':'neutral', 'hidden':False, 'opposite':None},
+  's': {'abbrev':'s', 'name':'stopped', 'hidden':True, 'opposite':None},
+}
+HIDDEN = [mode for mode, meta in MODES_META.items() if meta['hidden']]
 DATA_DIR     = pathlib.Path('~/.local/share/nbsdata').expanduser()
 LOG_PATH     = DATA_DIR / 'worklog.txt'
 STATUS_PATH  = DATA_DIR / 'workstatus.txt'
@@ -175,6 +178,15 @@ def make_report(summary, message=None):
   return title, body
 
 
+def get_mode_name(mode, abbrev=False):
+  if abbrev:
+    return mode
+  elif mode in MODES_META:
+    return MODES_META[mode].get('name', mode)
+  else:
+    return mode
+
+
 def format_timespan(seconds, numbers, label_smallest=True):
   if numbers == 'values':
     return seconds
@@ -310,8 +322,7 @@ class WorkTimes(object):
     elif numbers == 'text':
       summary['current_mode'] = str(current_mode)
       summary['current_elapsed'] = timestring(elapsed)
-    if not self.abbrev:
-      summary['current_mode'] = MODE_NAMES.get(summary['current_mode'], summary['current_mode'])
+    summary['current_mode_name'] = get_mode_name(summary['current_mode'], abbrev=self.abbrev)
     # Get all the elapsed times and add the time of the current mode to them.
     all_elapsed = self.get_all_elapsed()
     if current_mode:
@@ -329,16 +340,15 @@ class WorkTimes(object):
           elapsed_data = {'mode':mode, 'time':all_elapsed[mode]}
         elif numbers == 'text':
           elapsed_data = {'mode':mode, 'time':timestring(all_elapsed[mode])}
-        if not self.abbrev:
-          elapsed_data['mode'] = MODE_NAMES.get(elapsed_data['mode'], elapsed_data['mode'])
+        elapsed_data['mode_name'] = get_mode_name(elapsed_data['mode'], abbrev=self.abbrev)
         summary['elapsed'].append(elapsed_data)
     # If requested, calculate the ratio of the times for the specified modes.
     if modes:
       if self.abbrev:
         summary['ratio_str'] = '{}/{}'.format(modes[0], modes[1])
       else:
-        mode0 = MODE_NAMES.get(modes[0], modes[0])
-        mode1 = MODE_NAMES.get(modes[1], modes[1])
+        mode0 = get_mode_name(modes[0], abbrev=self.abbrev)
+        mode1 = get_mode_name(modes[1], abbrev=self.abbrev)
         summary['ratio_str'] = '{}/{}'.format(mode0, mode1)
       if modes[0] not in all_elapsed and modes[1] not in all_elapsed:
         ratio_value = None
@@ -667,10 +677,6 @@ class WorkTimesDatabase(WorkTimes):
 
   def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
-    if self.abbrev:
-      summary['modes'] = self.modes
-    else:
-      summary['modes'] = [MODE_NAMES.get(mode, mode) for mode in self.modes]
     try:
       era = Era.objects.get(user=self.user, current=True)
       summary['era'] = era.description

@@ -121,7 +121,7 @@
 .color-bluegray {
   background-color: #ddf;
 }
-.color-, .color-None, .color-null {
+.color-undefined, .color-None, .color-null, .color- {
   background-color: unset;
 }
 

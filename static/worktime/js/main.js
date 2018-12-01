@@ -14,11 +14,8 @@ function main() {
   connectionElem.textContent = "Current";
   flashGreen(connectionElem);
 
-  //TODO: Write general function to initialize the global `settings` object based on the initial
-  //      HTML values.
-  if (autoUpdateToggleElem.textContent === "off") {
-    settings.autoupdate = false;
-  }
+  // Initialize the global `settings` object based on the initial HTML values.
+  initSettings(settings);
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
 
   attachFormListener(submitForm);
@@ -54,6 +51,7 @@ function applySummary() {
     updateTotals(summary);
     updateHistory(summary);
     updateAdjustments(summary);
+    updateActions(summary);
     updateSettings(summary);
     lastUpdate = Date.now()/1000;
     /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
@@ -132,6 +130,25 @@ function toggleAutoUpdate(event) {
   }
 };
 
+function initSettings(settings) {
+  var formElem = document.querySelector('form[name="settings"]');
+  for (var i = 0; i < formElem.children.length; i++) {
+    var child = formElem.children[i];
+    if (child.tagName !== "P" || child.children.length !== 1) {
+      continue;
+    }
+    var button = child.children[0];
+    if (button.tagName !== "BUTTON" || ! settings.hasOwnProperty(button.name)) {
+      continue;
+    }
+    if (button.textContent === "on") {
+      settings[button.name] = true;
+    } else if (button.textContent === "off") {
+      settings[button.name] = false;
+    }
+  }
+}
+
 
 /***** UPDATE DISPLAYED DATA *****/
 
@@ -176,10 +193,8 @@ function updateStatus(summary) {
   var currentModeElem = document.getElementById('current-mode');
   var currentElapsedElem = document.getElementById('current-elapsed');
   modeTimeElem.className = "mode-"+mode;
-  if (summary.meta.colors[mode]) {
-    modeTimeElem.classList.add("color-"+summary.meta.colors[mode]);
-  }
-  currentModeElem.textContent = summary.current_mode;
+  modeTimeElem.classList.add("color-"+summary.current_color);
+  currentModeElem.textContent = summary.current_mode_name;
   if (summary.current_mode && summary.current_mode !== "None") {
     currentElapsedElem.textContent = summary.current_elapsed;
   } else {
@@ -187,12 +202,12 @@ function updateStatus(summary) {
   }
 }
 
-function updateTotals(summary, totalsElem) {
+function updateTotals(summary) {
   var totalsElem = document.getElementById('totals-table');
   removeChildren(totalsElem);
   for (var i = 0; i < summary.elapsed.length; i++) {
     var total = summary.elapsed[i];
-    var row = makeRow("", total.mode, total.time);
+    var row = makeRow("", total.mode_name, total.time);
     totalsElem.appendChild(row);
   }
   for (var i = 0; i < summary.ratios.length; i++) {
@@ -277,9 +292,7 @@ function updateHistory(summary) {
     var periodElem = document.createElement('span');
     periodElem.classList.add('period');
     periodElem.classList.add('mode-'+mode);
-    if (summary.meta.colors[mode]) {
-      periodElem.classList.add("color-"+summary.meta.colors[mode]);
-    }
+    periodElem.classList.add("color-"+period.color);
     periodElem.style.width = period.width+"%";
     periodElem.dataset.index = i;
     periodElem.setAttribute('title', mode+" "+period.timespan);
@@ -300,18 +313,11 @@ function updateAdjustments(summary) {
     } else {
       var mode = adjustment.mode;
     }
-    if (adjustment.sign == "-") {
-      var effectiveMode = summary.meta.opposites[mode] || mode;
-    } else {
-      var effectiveMode = mode;
-    }
     // Make the display box.
     var adjustmentElem = document.createElement('span');
     adjustmentElem.classList.add('adjustment');
     adjustmentElem.classList.add('mode-'+mode);
-    if (summary.meta.colors[effectiveMode]) {
-      adjustmentElem.classList.add("color-"+summary.meta.colors[effectiveMode]);
-    }
+    adjustmentElem.classList.add("color-"+adjustment.color);
     adjustmentElem.style.left = adjustment.x+"%";
     adjustmentElem.textContent = mode+'\xa0'+adjustment.sign+adjustment.magnitude;
     adjustmentsBarElem.appendChild(adjustmentElem);
@@ -324,7 +330,42 @@ function updateAdjustments(summary) {
   arrangeAdjustments(adjustmentsBarElem);
 }
 
-function updateSettings(summary, settingsElem) {
+function updateActions(summary) {
+  // Update the "switch" and "adjust" action buttons.
+  var switchElem = document.getElementById('switch');
+  var adjustElem = document.getElementById('adjust-mode');
+  removeChildren(switchElem, "BUTTON");
+  var buttons = makeModeButtons(summary.modes, summary.modes_meta);
+  for (var m = 0; m < buttons.length; m++) {
+    switchElem.appendChild(buttons[m]);
+  }
+  removeChildren(adjustElem, "BUTTON");
+  var buttons = makeModeButtons(summary.modes, summary.modes_meta);
+  for (var m = 0; m < buttons.length; m++) {
+    adjustElem.appendChild(buttons[m]);
+  }
+}
+
+function makeModeButtons(modes, modes_meta) {
+  var buttons = [];
+  for (var m = 0; m < modes.length; m++) {
+    var mode = modes[m];
+    var modeData = modes_meta[mode];
+    var modeButtonElem = document.createElement("button");
+    modeButtonElem.className = "btn btn-default ajaxable";
+    modeButtonElem.name = "mode";
+    modeButtonElem.value = modeData.abbrev;
+    if (settings.abbrev) {
+      modeButtonElem.textContent = modeData.abbrev;
+    } else {
+      modeButtonElem.textContent = modeData.name;
+    }
+    buttons.push(modeButtonElem);
+  }
+  return buttons;
+}
+
+function updateSettings(summary) {
   var settingsElem = document.getElementById('settings');
   if (summary.settings === undefined) {
     return false;
@@ -361,9 +402,23 @@ function deactivateToggle(buttonElem) {
   buttonElem.classList.remove("active");
 }
 
-function removeChildren(element) {
-  while (element.childNodes.length > 0) {
-    element.removeChild(element.childNodes[0]);
+function removeChildren(element, tagName) {
+  // Remove all child nodes of the element, or optionally, all children with a given tagName.
+  var c = 0;
+  while (c < element.childNodes.length) {
+    var remove = false;
+    if (tagName) {
+      if (element.childNodes[c].tagName === tagName) {
+        remove = true;
+      }
+    } else {
+      remove = true;
+    }
+    if (remove) {
+      element.removeChild(element.childNodes[c]);
+    } else {
+      c++;
+    }
   }
 }
 
