@@ -39,8 +39,14 @@
 }
 
 /* When the screen is too small, stop the floats and go to one vertical column. */
-@media (max-width: 615px) {
-  .column {
+@media (max-width: 550px) {
+  .abbrev .column {
+    float: none !important;
+  }
+}
+/* When we're not abbreviating mode names, do this earlier. */
+@media (max-width: 680px) {
+  .noabbrev .column {
     float: none !important;
   }
 }

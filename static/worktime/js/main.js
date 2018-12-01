@@ -47,6 +47,7 @@ function applySummary() {
   if (summary && summary.elapsed && summary.ratios) {
     unwarn(connectionWarningElem);
     updateSettings(settings, summary);
+    updateParent(summary);
     updateEras(summary);
     updateStatus(summary);
     updateTotals(summary);
@@ -163,6 +164,17 @@ function updateSettings(settings, summary) {
 
 
 /***** UPDATE DISPLAYED DATA *****/
+
+function updateParent(summary) {
+  var mainDisplayElem = document.getElementById('main-display');
+  if (summary.settings.abbrev === true) {
+    mainDisplayElem.classList.remove("noabbrev");
+    mainDisplayElem.classList.add("abbrev");
+  } else if (summary.settings.abbrev === false) {
+    mainDisplayElem.classList.remove("abbrev");
+    mainDisplayElem.classList.add("noabbrev");
+  }
+}
 
 function updateEras(summary) {
   var eraNameElem = document.getElementById('era-name');
