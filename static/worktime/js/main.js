@@ -34,8 +34,12 @@ function updateSummary() {
     var connectionWarningElem = document.getElementById('connection-warning');
     warn(connectionWarningElem, "Could not connect to server");
   }
+  var loadingElem = document.getElementById("loading");
   if (settings.autoupdate && !document.hidden) {
+    loadingElem.style.display = "initial";
     makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
+  } else {
+    loadingElem.style.display = "none";
   }
 }
 
@@ -67,6 +71,8 @@ function applySummary() {
   } else {
     warn(connectionWarningElem, "No summary object returned");
   }
+  var loadingElem = document.getElementById("loading");
+  loadingElem.style.display = "none";
 }
 
 function updateConnection() {
@@ -647,6 +653,8 @@ function getAncestor(descendent, ancestorTag) {
 
 function submitForm(event) {
   event.preventDefault();
+  var loadingElem = document.getElementById("loading");
+  loadingElem.style.display = "initial";
   // Find the enclosing form element.
   var formElem = getAncestor(event.target, "FORM");
   var form = new FormData(formElem);
