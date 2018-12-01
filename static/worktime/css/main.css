@@ -85,14 +85,19 @@
   height: 15px;
 }
 
-#adjustments-bar .adjustment {
+.adjustment {
   position: absolute;
   border-radius: 3px;
   padding: 5px 8px 5px 8px;
   font-size: 90%;
 }
 
-#adjustment-lines-bar .adjustment-line {
+.adjustment.color-null, .adjustment.color-None, .adjustment.color-undefined, .adjustment.color- {
+  padding: 4px 7px 4px 7px;
+  border: solid 1px #ccc;
+}
+
+.adjustment-line {
   position: absolute;
   border: solid 1px #ccc;
   height: 15px;
