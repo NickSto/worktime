@@ -195,10 +195,10 @@ function updateEras(summary) {
   if (summary.eras.length > 0) {
     chooseEraElem.style.display = "initial";
     if (createEraPromptElem.children.length > 0) {
-      removeChildren(createEraPromptElem);
+      removeAllChildren(createEraPromptElem);
       createEraPromptElem.textContent = "Or start a new project:";
     }
-    removeChildren(eraSelectElem);
+    removeAllChildren(eraSelectElem);
     for (var i = 0; i < summary.eras.length; i++) {
       var era = summary.eras[i];
       var optionElem = document.createElement("option");
@@ -234,7 +234,7 @@ function updateStatus(summary) {
 
 function updateTotals(summary) {
   var totalsElem = document.getElementById('totals-table');
-  removeChildren(totalsElem);
+  removeAllChildren(totalsElem);
   for (var i = 0; i < summary.elapsed.length; i++) {
     var total = summary.elapsed[i];
     var row = makeRow("", total.mode_name, total.time);
@@ -287,7 +287,7 @@ function updateHistory(summary) {
   }
   historyTimespanElem.textContent = "Past "+summary.history.timespan+":";
   /* Create the bar display. */
-  removeChildren(historyBarElem);
+  removeAllChildren(historyBarElem);
   // If there's no history, put in a dummy period just to show the bar.
   if (summary.history.periods.length === 0) {
     var periodElem = document.createElement('span');
@@ -334,8 +334,8 @@ function updateHistory(summary) {
 function updateAdjustments(summary) {
   var adjustmentsBarElem = document.getElementById('adjustments-bar');
   var adjustmentLinesBarElem = document.getElementById('adjustment-lines-bar');
-  removeChildren(adjustmentsBarElem);
-  removeChildren(adjustmentLinesBarElem);
+  removeAllChildren(adjustmentsBarElem);
+  removeAllChildren(adjustmentLinesBarElem);
   for (var i = 0; i < summary.history.adjustments.length; i++) {
     var adjustment = summary.history.adjustments[i];
     if (adjustment.mode === null) {
@@ -365,13 +365,21 @@ function updateActions(summary) {
   var switchElem = document.getElementById('switch');
   var adjustElem = document.getElementById('adjust-mode');
   var buttons = makeModeButtons(summary.modes, summary.modes_meta);
-  removeChildren(switchElem, "BUTTON");
+  removeChildrenByClass(switchElem, "button-group");
   for (var m = 0; m < buttons.length; m++) {
-    switchElem.appendChild(buttons[m]);
-    switchElem.appendChild(document.createTextNode(" "));  // Maintain spacing between buttons.
+    if (m % 2 === 0) {
+      var groupElem = document.createElement("div");
+      groupElem.className = "button-group";
+    }
+    groupElem.appendChild(buttons[m]);
+    groupElem.appendChild(document.createTextNode(" "));  // Maintain spacing between buttons.
+    if (m % 2 === 1) {
+      switchElem.appendChild(groupElem);
+      switchElem.appendChild(document.createTextNode(" "));  // Maintain spacing between groups.
+    }
   }
   var buttons = makeModeButtons(summary.modes, summary.modes_meta);
-  removeChildren(adjustElem, "BUTTON");
+  removeChildrenByTag(adjustElem, "BUTTON");
   for (var m = 0; m < buttons.length; m++) {
     adjustElem.appendChild(buttons[m]);
   }
@@ -432,20 +440,31 @@ function deactivateToggle(buttonElem) {
   buttonElem.classList.remove("active");
 }
 
-function removeChildren(element, tagName) {
-  // Remove all child nodes of the element, or optionally, all children with a given tagName.
+function removeAllChildren(element) {
+  while (element.childNodes.length > 0) {
+    element.removeChild(element.childNodes[0]);
+  }
+}
+
+function removeChildrenByTag(element, tagName) {
+  // Remove all children with a given tagName.
   var c = 0;
   while (c < element.childNodes.length) {
-    var remove = false;
-    if (tagName) {
-      if (element.childNodes[c].tagName === tagName) {
-        remove = true;
-      }
-    } else {
-      remove = true;
-    }
-    if (remove) {
+    if (element.childNodes[c].tagName === tagName) {
       element.removeChild(element.childNodes[c]);
+    } else {
+      c++;
+    }
+  }
+}
+
+function removeChildrenByClass(element, className) {
+  // Remove all children with a given class.
+  var c = 0;
+  while (c < element.childNodes.length) {
+    var child = element.childNodes[c];
+    if (child.classList && child.classList.contains(className)) {
+      element.removeChild(child);
     } else {
       c++;
     }

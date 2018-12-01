@@ -112,9 +112,18 @@
                     <strong>Switch</strong> mode to:
                   </p>
                   {% for mode in modes_list %}
-                    <button class="btn btn-default ajaxable" name="mode" value="{{ mode.abbrev }}">
-                      {{ mode.disp_name }}
-                    </button>
+                    {% if forloop.first %}
+                      <span class="button-group">
+                    {% elif forloop.counter == 3 %}
+                      </span>
+                      <span class="button-group">
+                    {% endif %}
+                      <button class="btn btn-default ajaxable" name="mode" value="{{ mode.abbrev }}">
+                        {{ mode.disp_name }}
+                      </button>
+                    {% if forloop.last %}
+                      </span>
+                    {% endif %}
                   {% endfor %}
                   <input class="ruhuman" name="site" type="text">
                   <input type="hidden" name="debug" value="{{ debug }}">
