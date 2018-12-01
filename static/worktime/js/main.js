@@ -171,10 +171,14 @@ function updateEras(summary) {
 }
 
 function updateStatus(summary) {
+  var mode = summary.current_mode;
   var modeTimeElem = document.getElementById('mode-time');
   var currentModeElem = document.getElementById('current-mode');
   var currentElapsedElem = document.getElementById('current-elapsed');
-  modeTimeElem.className = "mode-"+summary.current_mode;
+  modeTimeElem.className = "mode-"+mode;
+  if (summary.meta.colors[mode]) {
+    modeTimeElem.classList.add("color-"+summary.meta.colors[mode]);
+  }
   currentModeElem.textContent = summary.current_mode;
   if (summary.current_mode && summary.current_mode !== "None") {
     currentElapsedElem.textContent = summary.current_elapsed;
@@ -273,6 +277,9 @@ function updateHistory(summary) {
     var periodElem = document.createElement('span');
     periodElem.classList.add('period');
     periodElem.classList.add('mode-'+mode);
+    if (summary.meta.colors[mode]) {
+      periodElem.classList.add("color-"+summary.meta.colors[mode]);
+    }
     periodElem.style.width = period.width+"%";
     periodElem.dataset.index = i;
     periodElem.setAttribute('title', mode+" "+period.timespan);
@@ -293,10 +300,18 @@ function updateAdjustments(summary) {
     } else {
       var mode = adjustment.mode;
     }
+    if (adjustment.sign == "-") {
+      var effectiveMode = summary.meta.opposites[mode] || mode;
+    } else {
+      var effectiveMode = mode;
+    }
     // Make the display box.
     var adjustmentElem = document.createElement('span');
     adjustmentElem.classList.add('adjustment');
     adjustmentElem.classList.add('mode-'+mode);
+    if (summary.meta.colors[effectiveMode]) {
+      adjustmentElem.classList.add("color-"+summary.meta.colors[effectiveMode]);
+    }
     adjustmentElem.style.left = adjustment.x+"%";
     adjustmentElem.textContent = mode+'\xa0'+adjustment.sign+adjustment.magnitude;
     adjustmentsBarElem.appendChild(adjustmentElem);

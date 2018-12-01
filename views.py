@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
 DEFAULT_ERA_NAME = 'Project 1'
+COLORS = {'p':'red', 'w':'green', 'n':'bluegray'}
+OPPOSITES = {'p':'w', 'w':'p'}
 
 #TODO: Improve experience for first-time visitors:
 #      1. Write some introduction at the top.
@@ -56,7 +58,9 @@ def main(request):
   work_times = WorkTimesDatabase(user)
   summary = work_times.get_summary(numbers=params['numbers'], timespans=(12*60*60, 2*60*60))
   summary['debug'] = params['debug']
+  summary['meta'] = {'colors':COLORS, 'opposites':OPPOSITES}
   if params['format'] == 'html':
+    apply_colors(summary, COLORS)
     return render(request, 'worktime/main.tmpl', summary)
   elif params['format'] == 'json':
     return HttpResponse(json.dumps(summary), content_type='application/json')
@@ -200,6 +204,16 @@ def settings(request):
 
 
 ##### Helper functions #####
+
+def apply_colors(summary, colors):
+  summary['current_color'] = colors.get(summary['current_mode'])
+  for period in summary['history']['periods']:
+    period['color'] = colors.get(period['mode'])
+  for adjustment in summary['history']['adjustments']:
+    if adjustment['sign'] == '-' and adjustment['mode'] in OPPOSITES:
+      adjustment['color'] = colors.get(OPPOSITES[adjustment['mode']])
+    else:
+      adjustment['color'] = colors.get(adjustment['mode'])
 
 def get_user(request):
   cookie_value = request.COOKIES.get(COOKIE_NAME)

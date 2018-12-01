@@ -32,7 +32,7 @@
             <p id="history-timespan">Past {{ history.timespan }}:</p>
             <div id="adjustments-bar">
               {% for adjustment in history.adjustments %}
-                <span class="adjustment mode-{{ adjustment.mode }}" style="left: {{ adjustment.x }}%">
+                <span class="adjustment mode-{{ adjustment.mode }} color-{{ adjustment.color }}" style="left: {{ adjustment.x }}%">
                   {{ adjustment.mode }}&nbsp;{{ adjustment.sign }}{{ adjustment.magnitude }}
                 </span>
               {% endfor %}
@@ -50,7 +50,7 @@
               {% endfor %}
               {% for period in history.periods %}<!--
                 Workaround to prevent whitespace appearing between the spans.
-             --><span class="period mode-{{ period.mode }}" style="width: {{ period.width }}%" data-index="{{ forloop.counter0 }}" title="{{ period.mode }} {{ period.timespan }}"></span><!--
+             --><span class="period mode-{{ period.mode }} color-{{ period.color }}" style="width: {{ period.width }}%" data-index="{{ forloop.counter0 }}" title="{{ period.mode }} {{ period.timespan }}"></span><!--
            -->{% empty %}<span class="period mode-None" style="width: 99%" data-index="0"></span>
               {% endfor %}
             </div>
@@ -61,7 +61,7 @@
                 <div id="status">
                   <h4>
                     Current mode:
-                    <span id="mode-time" class="mode-{{ current_mode }}">
+                    <span id="mode-time" class="mode-{{ current_mode }} color-{{ current_color }}">
                       <strong id="current-mode">
                         {% if current_mode %}
                           {{ current_mode }}

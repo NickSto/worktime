@@ -102,26 +102,26 @@
   border-right: 1px #ccc solid;
 }
 
-#history .period.mode-w {
+#history .period.color-green {
   background-color: #afa;
 }
-#history .period.mode-p {
+#history .period.color-red {
   background-color: #faa;
 }
-#history .period.mode-n {
+#history .period.color-bluegray {
   background-color: #ddf;
 }
 
-.mode-w {
+.color-green {
   background-color: #cfc;
 }
-.mode-p {
+.color-red {
   background-color: #fcc;
 }
-.mode-n {
+.color-bluegray {
   background-color: #ddf;
 }
-.mode-s, .mode-None, .mode-null {
+.color-, .color-None, .color-null {
   background-color: unset;
 }
 
