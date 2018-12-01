@@ -17,6 +17,7 @@ function main() {
   // Initialize the global `settings` object based on the initial HTML values.
   initSettings(settings);
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
+  //TODO: Force update when changing a setting even when autoupdate is off.
 
   attachFormListener(submitForm);
   addPopupListeners(historyBarElem);
@@ -394,6 +395,7 @@ function makeModeButtons(modes, modes_meta) {
     modeButtonElem.className = "btn btn-default ajaxable";
     modeButtonElem.name = "mode";
     modeButtonElem.value = modeData.abbrev;
+    modeButtonElem.addEventListener("click", submitForm);
     if (settings.abbrev) {
       modeButtonElem.textContent = modeData.abbrev;
     } else {
