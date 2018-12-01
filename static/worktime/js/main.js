@@ -1,6 +1,6 @@
 //TODO: Scroll buttons under the history bar?
 
-var autoUpdate = true;
+var settings = {autoupdate:true, abbrev:false};
 var lastUpdate = Date.now()/1000;
 
 function main() {
@@ -14,8 +14,10 @@ function main() {
   connectionElem.textContent = "Current";
   flashGreen(connectionElem);
 
+  //TODO: Write general function to initialize the global `settings` object based on the initial
+  //      HTML values.
   if (autoUpdateToggleElem.textContent === "off") {
-    autoUpdate = false;
+    settings.autoupdate = false;
   }
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
 
@@ -35,7 +37,7 @@ function updateSummary() {
     var connectionWarningElem = document.getElementById('connection-warning');
     warn(connectionWarningElem, "Could not connect to server");
   }
-  if (autoUpdate && !document.hidden) {
+  if (settings.autoupdate && !document.hidden) {
     makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
   }
 }
@@ -118,12 +120,12 @@ function toggleAutoUpdate(event) {
   // Send the update to the server, but only let the client change the client state.
   // Avoids conflicts and race conditions between the server and client state.
   if (event.target.value === "on") {
-    autoUpdate = true;
+    settings.autoupdate = true;
   } else if (event.target.value === "off") {
-    autoUpdate = false;
+    settings.autoupdate = false;
   }
   submitForm(event);
-  if (autoUpdate) {
+  if (settings.autoupdate) {
     activateToggle(event.target);
   } else {
     deactivateToggle(event.target);
@@ -321,6 +323,7 @@ function updateSettings(summary, settingsElem) {
     if (setting === 'autoupdate' || value === undefined) {
       continue;
     }
+    settings[setting] = value;
     if (field.tagName === "BUTTON") {
       if (value === true) {
         activateToggle(field);
