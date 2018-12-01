@@ -46,13 +46,14 @@ function applySummary() {
   var summary = this.response;
   if (summary && summary.elapsed && summary.ratios) {
     unwarn(connectionWarningElem);
+    updateSettings(settings, summary);
     updateEras(summary);
     updateStatus(summary);
     updateTotals(summary);
     updateHistory(summary);
     updateAdjustments(summary);
     updateActions(summary);
-    updateSettings(summary);
+    updateSettingsUI(summary);
     lastUpdate = Date.now()/1000;
     /*TODO: Somehow, the lastUpdate is getting set to now even when the request fails.
      *      Symptoms: on mobile devices, I switch back to the tab after a long time and the info
@@ -145,6 +146,17 @@ function initSettings(settings) {
       settings[button.name] = true;
     } else if (button.textContent === "off") {
       settings[button.name] = false;
+    }
+  }
+}
+
+function updateSettings(settings, summary) {
+  var keys = Object.keys(summary.settings);
+  for (var k = 0; k < keys.length; k++) {
+    var key = keys[k];
+    if (key !== "autoupdate") {
+      var value = summary.settings[key];
+      settings[key] = value;
     }
   }
 }
@@ -334,13 +346,14 @@ function updateActions(summary) {
   // Update the "switch" and "adjust" action buttons.
   var switchElem = document.getElementById('switch');
   var adjustElem = document.getElementById('adjust-mode');
-  removeChildren(switchElem, "BUTTON");
   var buttons = makeModeButtons(summary.modes, summary.modes_meta);
+  removeChildren(switchElem, "BUTTON");
   for (var m = 0; m < buttons.length; m++) {
     switchElem.appendChild(buttons[m]);
+    switchElem.appendChild(document.createTextNode(" "));  // Maintain spacing between buttons.
   }
-  removeChildren(adjustElem, "BUTTON");
   var buttons = makeModeButtons(summary.modes, summary.modes_meta);
+  removeChildren(adjustElem, "BUTTON");
   for (var m = 0; m < buttons.length; m++) {
     adjustElem.appendChild(buttons[m]);
   }
@@ -365,7 +378,7 @@ function makeModeButtons(modes, modes_meta) {
   return buttons;
 }
 
-function updateSettings(summary) {
+function updateSettingsUI(summary) {
   var settingsElem = document.getElementById('settings');
   if (summary.settings === undefined) {
     return false;
@@ -379,7 +392,6 @@ function updateSettings(summary) {
     if (setting === 'autoupdate' || value === undefined) {
       continue;
     }
-    settings[setting] = value;
     if (field.tagName === "BUTTON") {
       if (value === true) {
         activateToggle(field);
