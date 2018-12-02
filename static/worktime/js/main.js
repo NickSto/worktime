@@ -603,9 +603,10 @@ function formFailureWarn() {
 function unhideJSelems() {
   var jsElems = document.getElementsByClassName('javascript-only');
   for (var i = 0; i < jsElems.length; i++) {
-    //TODO: Maybe just remove the 'javascript-only' class from the element?
-    //      But that's not idempotent, which doesn't seem great.
-    jsElems[i].style.display = "initial";
+    //TODO: Might want to find a better solution than removing the class (not idempotent).
+    //      I'd prefer to just change the display style directly, but there's no value I can find
+    //      whose effect is "act like it was never set" (no, surprisingly, "unset" doesn't do this).
+    jsElems[i].classList.remove("javascript-only");
   }
 }
 
