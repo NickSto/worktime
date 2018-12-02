@@ -50,7 +50,7 @@
 }
 
 /* When the screen is too small, stop the floats and go to one vertical column. */
-@media (max-width: 550px) {
+@media (max-width: 590px) {
   .abbrev .column {
     float: none !important;
   }
@@ -187,6 +187,7 @@
 
 #adjust-mode .btn {
   margin-bottom: 10px;
+  margin-right: 0;
 }
 
 #adjust-mode {
