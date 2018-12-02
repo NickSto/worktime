@@ -190,7 +190,7 @@
                 <form name="settings" method="post" action="{% url 'worktime:settings' %}">
                   {% csrf_token %}
                   <input class="ruhuman" name="site" type="text">
-                  <p class="javascript-only">
+                  <p class="setting javascript-only">
                     {% if settings.autoupdate %}
                       <button class="btn btn-default active" name="autoupdate" value="off" id="autoupdate-toggle">on</button>
                     {% else %}
@@ -198,7 +198,7 @@
                     {% endif %}
                     Auto-update
                   </p>
-                  <p>
+                  <p class="setting">
                     {% if settings.abbrev %}
                       <button class="btn btn-default ajaxable active" name="abbrev" value="off">on</button>
                     {% else %}

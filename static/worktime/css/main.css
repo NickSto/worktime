@@ -178,9 +178,22 @@
 
 .worktime-section form {
   border: 1px solid #ddd;
+  padding: 15px;
 }
 
-#actions #switch-era {
+#actions .btn, #settings .btn {
+  margin-bottom: 0;
+}
+
+#adjust-mode .btn {
+  margin-bottom: 10px;
+}
+
+#adjust-mode {
+  padding-left: 10px;
+}
+
+#switch-era {
   padding: 15px;
   border-bottom: none;
 }
@@ -189,21 +202,14 @@
   display: inline-block;
 }
 
-#settings form {
-  padding: 15px 15px 5px 15px;
+p.setting {
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-bottom: 0;
 }
 
 #adjust {
   height: 200px;
-}
-
-#adjust-delta, #adjust-mode {
-  padding-top: 15px;
-  padding-left: 10px;
-}
-
-#adjust-delta .description {
-  padding-left: 5px;
 }
 
 #adjust-delta p {
