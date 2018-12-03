@@ -815,7 +815,7 @@ class WorkTimesDatabase(WorkTimes):
         elapsed = period.start - last_end
         width = round(total_width * elapsed / timespan, 1)
         bar_periods.append({'mode':None, 'width':width, 'start':last_end, 'end':period.start,
-                            'timespan':format_timespan(elapsed, numbers)})
+                            'timespan':format_timespan(elapsed, numbers), 'mode_name':'None'})
         last_end = period.start
       if period.start < cutoff:
         if period.end is None:
@@ -830,25 +830,26 @@ class WorkTimesDatabase(WorkTimes):
         end = period.end
       last_end = end
       width = round(total_width * elapsed / timespan, 1)
-      bar_periods.append({'mode':period.mode, 'width':width, 'start':period.start,
-                          'timespan':format_timespan(period.elapsed, numbers), 'end':end})
+      bar_periods.append({'mode':period.mode, 'width':width, 'start':period.start, 'end':end,
+                          'timespan':format_timespan(period.elapsed, numbers),
+                          'mode_name':get_mode_name(period.mode, self.abbrev)})
       logging.info('Found {} {} sec long ({}%): {} to {}'
                    .format(period.mode, period.elapsed, width, period.start, period.end))
     # Fill in empty gaps at start or end of timespan with empty bars.
     if len(bar_periods) == 0:
       bar_periods.append({'mode':None, 'width':total_width, 'start':cutoff, 'end':now,
-                          'timespan':format_timespan(timespan, numbers)})
+                          'timespan':format_timespan(timespan, numbers), 'mode_name':'None'})
     else:
       if bar_periods[0]['start'] > cutoff+10:
         elapsed = bar_periods[0]['start'] - cutoff
         width = round(total_width * elapsed / timespan, 1)
-        bar_periods.insert(0, {'mode':None, 'width':width, 'end':bar_periods[0]['start'],
-                               'timespan':format_timespan(elapsed, numbers), 'start':cutoff})
+        bar_periods.insert(0, {'mode':None, 'width':width, 'end':bar_periods[0]['start'], 'start':cutoff,
+                               'timespan':format_timespan(elapsed, numbers), 'mode_name':'None'})
       if bar_periods[-1]['end'] < now-10:
         elapsed = now - bar_periods[-1]['end']
         width = round(total_width * elapsed / timespan, 1)
-        bar_periods.append({'mode':None, 'width':width, 'start':bar_periods[-1]['end'],
-                            'timespan':format_timespan(elapsed, numbers), 'end':now})
+        bar_periods.append({'mode':None, 'width':width, 'start':bar_periods[-1]['end'], 'end':now,
+                            'timespan':format_timespan(elapsed, numbers), 'mode_name':'None'})
     # Some post-processing to drop periods that are too small and make sure it all adds up to
     # total_width.
     bar_periods = [p for p in bar_periods if p['width'] >= 0.3]
@@ -879,7 +880,9 @@ class WorkTimesDatabase(WorkTimes):
         sign = '-'
       x = round(total_width * (adjustment.timestamp-cutoff) / timespan, 1)
       magnitude = format_timespan(abs(adjustment.delta), numbers, label_smallest=False)
-      adjustments_data.append({'mode':adjustment.mode, 'sign':sign, 'magnitude':magnitude, 'x':x})
+      adjustments_data.append({'mode':adjustment.mode, 'sign':sign, 'magnitude':magnitude, 'x':x,
+                               'mode_name':get_mode_name(adjustment.mode, self.abbrev),
+                               'timespan':format_timespan(abs(adjustment.delta), numbers)})
     return adjustments_data
 
 
