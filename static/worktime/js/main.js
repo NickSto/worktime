@@ -407,6 +407,9 @@ function makeModeButtons(modes, modes_meta) {
     var modeData = modes_meta[mode];
     var modeButtonElem = document.createElement("button");
     modeButtonElem.className = "btn btn-default ajaxable";
+    if (m === modes.length-1) {
+      modeButtonElem.classList.add("last");
+    }
     modeButtonElem.name = "mode";
     modeButtonElem.value = modeData.abbrev;
     modeButtonElem.addEventListener("click", submitForm);

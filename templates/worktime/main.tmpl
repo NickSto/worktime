@@ -123,7 +123,7 @@
                       </span>
                       <span class="button-group">
                     {% endif %}
-                      <button class="btn btn-default ajaxable" name="mode" value="{{ mode.abbrev }}">
+                      <button class="btn btn-default ajaxable{% if forloop.last %} last{% endif %}" name="mode" value="{{ mode.abbrev }}">
                         {{ mode.disp_name }}
                       </button>
                     {% if forloop.last %}

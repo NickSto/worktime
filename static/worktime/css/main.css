@@ -194,6 +194,10 @@
   margin-bottom: 0;
 }
 
+#actions .btn.last {
+  margin-right: 0;
+}
+
 .btn[name="mode"] {
   min-width: 37px;
 }
