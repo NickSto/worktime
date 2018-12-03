@@ -60,7 +60,7 @@
   }
 }
 /* When we're not abbreviating mode names, do this earlier. */
-@media (max-width: 680px) {
+@media (max-width: 720px) {
   .noabbrev .column {
     float: none !important;
   }
@@ -155,6 +155,11 @@
   margin-left: 5px;
   padding: 5px 10px 6px 5px;
   border-radius: 4px;
+}
+
+#status {
+  /* Kludge to get around cutting off current mode display on Chrome. */
+  width: 110%;
 }
 
 #current-mode {
