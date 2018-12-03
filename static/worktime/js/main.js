@@ -69,6 +69,7 @@ function applySummary() {
      *      Is `if (summary)` not properly detecting the failure? Doesn't seem like it.
      *      Maybe it actually did get a response, but didn't properly update the display?
      */
+     updateConnection();
   } else if (summary) {
     warn(connectionWarningElem, "Invalid summary object returned");
   } else {
@@ -557,6 +558,9 @@ function getOpacity(seconds) {
    * 15 minutes: 0.41
    * 1 hour:     0.19
    */
+  if (seconds === 0) {
+    return 1;
+  }
   var rawOpacity = 11.0021/Math.log(seconds*1000);
   var transparency = 3 * (1 - rawOpacity);
   var opacity = 1 - transparency;
@@ -570,7 +574,11 @@ function flashGreen(element, delay) {
     delay = 50;
   }
   var startTime = Date.now() + delay;
+  element.dataset.flashStart = startTime;
   function updateGreen() {
+    if (element.dataset.flashStart !== ""+startTime) {
+      return;
+    }
     var age = Date.now() - startTime;
     var bgOpacity = Math.max((3000-age)/3000, 0);
     element.style.backgroundColor = "rgba(200, 255, 200, "+bgOpacity+")";
