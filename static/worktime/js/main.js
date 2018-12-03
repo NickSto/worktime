@@ -339,7 +339,7 @@ function updateHistory(summary) {
     periodElem.classList.add("color-"+period.color);
     periodElem.style.width = period.width+"%";
     periodElem.dataset.index = i;
-    periodElem.setAttribute('title', mode+" "+period.timespan);
+    periodElem.setAttribute('title', period.mode_name+" "+period.timespan);
     periodElem.addEventListener('click', showPopup, false);
     historyBarElem.appendChild(periodElem);
   }
@@ -364,6 +364,7 @@ function updateAdjustments(summary) {
     adjustmentElem.classList.add("color-"+adjustment.color);
     adjustmentElem.style.left = adjustment.x+"%";
     adjustmentElem.textContent = mode+'\xa0'+adjustment.sign+adjustment.magnitude;
+    adjustmentElem.setAttribute('title', adjustment.mode_name+" "+adjustment.sign+adjustment.timespan);
     adjustmentsBarElem.appendChild(adjustmentElem);
     // Make the indicator line.
     var adjustmentLineElem = document.createElement('span');
