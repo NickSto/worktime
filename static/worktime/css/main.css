@@ -189,6 +189,10 @@
   margin-bottom: 0;
 }
 
+.btn[name="mode"] {
+  min-width: 37px;
+}
+
 #adjust-mode .btn {
   margin-bottom: 10px;
   margin-right: 0;
