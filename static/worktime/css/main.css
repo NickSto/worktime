@@ -34,6 +34,10 @@
   }
 }
 
+#connection-info {
+  margin-right: 10px;
+}
+
 #loading {
   display: none;
   width: 40px;

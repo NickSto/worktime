@@ -19,6 +19,8 @@ function main() {
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
   //TODO: Force update when changing a setting even when autoupdate is off.
 
+  var refreshButtonElem = document.getElementById("refresh-button");
+  refreshButtonElem.addEventListener("click", refreshButtonAction);
   attachFormListener(submitForm);
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
@@ -27,7 +29,7 @@ function main() {
   document.addEventListener('visibilitychange', updateSummary, false);
 }
 
-function updateSummary() {
+function updateSummary(force) {
   // Only update when the tab is visible.
   // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
   // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
@@ -36,7 +38,7 @@ function updateSummary() {
     warn(connectionWarningElem, "Could not connect to server");
   }
   var loadingElem = document.getElementById("loading");
-  if (settings.autoupdate && !document.hidden) {
+  if (force || (settings.autoupdate && !document.hidden)) {
     loadingElem.style.display = "initial";
     makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
   } else {
@@ -167,6 +169,13 @@ function updateSettings(settings, summary) {
       settings[key] = value;
     }
   }
+}
+
+function refreshButtonAction(event) {
+  event.preventDefault();
+  var loadingElem = document.getElementById("loading");
+  loadingElem.style.display = "initial";
+  updateSummary(true);
 }
 
 

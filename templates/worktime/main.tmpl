@@ -24,8 +24,13 @@
         </div> <!-- .panel-heading -->
         <div class="panel-body">
           <section id="connection" class="pull-right">
-            <p id="connection-status"></p>
-            <p id="connection-warning"></p>
+            <div class="pull-left" id="connection-info">
+              <p id="connection-status"></p>
+              <p id="connection-warning"></p>
+            </div>
+            <form class="pull-right" method="get" action="{% url 'worktime_main' %}">
+              <input class="btn btn-default" id="refresh-button" type="submit" value="Update">
+            </form>
           </section> <!-- #connection -->
           <section id="history" class="worktime-section">
             <img id="loading" src="{% static 'worktime/img/loading-icon.svg' %}?via=html">
