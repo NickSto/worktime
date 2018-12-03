@@ -38,7 +38,8 @@ function updateSummary(force) {
     warn(connectionWarningElem, "Could not connect to server");
   }
   var loadingElem = document.getElementById("loading");
-  if (force || (settings.autoupdate && !document.hidden)) {
+  //TODO: `force` is an event when this is called as an event listener.
+  if (force === true || (settings.autoupdate && !document.hidden)) {
     loadingElem.style.display = "initial";
     makeRequest('GET', '/worktime?format=json&numbers=text&via=js', applySummary, connectionWarn);
   } else {
@@ -140,6 +141,7 @@ function toggleAutoUpdate(event) {
   } else {
     deactivateToggle(event.target);
   }
+  //TODO: After turning it off, don't do that final update.
 };
 
 function initSettings(settings) {
