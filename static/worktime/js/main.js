@@ -176,6 +176,7 @@ function refreshButtonAction(event) {
   var loadingElem = document.getElementById("loading");
   loadingElem.style.display = "initial";
   updateSummary(true);
+  event.target.blur()
 }
 
 
