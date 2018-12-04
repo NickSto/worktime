@@ -63,6 +63,9 @@ def make_argparser():
     help='Don\'t abbreviate mode names (show "work" instead of "w").')
   parser.add_argument('-w', '--web', action='store_true',
     help='Use the website ({}) as the history log instead of local files.'.format(API_ENDPOINT))
+  parser.add_argument('-s', '--sync', action='store_true',
+    help='When using --web, sync the local state files with the web state. This will always '
+         'overwrite the local state, and will never overwrite the web state with the local one.')
   parser.add_argument('-c', '--cookie',
     help='Authorization cookie to use when in --web mode.')
   parser.add_argument('-u', '--url', default=API_ENDPOINT,
@@ -88,8 +91,15 @@ def main(argv):
   logging.basicConfig(stream=args.log, level=args.volume, format='%(message)s')
 
   if args.web or args.url != API_ENDPOINT:
+    if args.sync:
+      status_path = STATUS_PATH
+      log_path = LOG_PATH
+    else:
+      status_path = None
+      log_path = None
     work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN, abbrev=args.abbrev, api_endpoint=args.url,
-                              timeout=TIMEOUT, verify=args.verify, cookie=args.cookie)
+                              timeout=TIMEOUT, verify=args.verify, cookie=args.cookie,
+                              status_path=status_path, log_path=log_path)
   else:
     work_times = WorkTimesFiles(modes=MODES, hidden=HIDDEN, abbrev=args.abbrev,
                                 log_path=LOG_PATH, status_path=STATUS_PATH)
@@ -462,6 +472,22 @@ class WorkTimesFiles(WorkTimes):
     if self._log is None:
       self._log = self._read_log()
     return self._log
+
+  def write_summary(self, summary, current_inclusive=False):
+    # Write the given summary data to the files.
+    now = int(time.time())
+    current_mode = summary['current_mode']
+    mode_start = now-summary['current_elapsed']
+    status = {current_mode:mode_start}
+    self._write_file(status, self.status_path)
+    self._log = {}
+    for elapsed_data in summary['elapsed']:
+      mode = elapsed_data['mode']
+      elapsed = elapsed_data['time']
+      if mode == current_mode and current_inclusive:
+        elapsed -= summary['current_elapsed']
+      self._log[mode] = elapsed
+    self._write_file(self._log, self.log_path)
 
   def _read_log(self):
     """Read the elapsed times log file and store the result in the self._log cache.
@@ -888,22 +914,28 @@ class WorkTimesDatabase(WorkTimes):
 
 class WorkTimesWeb(WorkTimes):
 
-  def __init__(self, modes=MODES, hidden=HIDDEN, abbrev=True,
-               api_endpoint=API_ENDPOINT, timeout=TIMEOUT, verify=True, cookie=None):
+  def __init__(self, modes=MODES, hidden=HIDDEN, abbrev=True, api_endpoint=API_ENDPOINT,
+               timeout=TIMEOUT, verify=True, cookie=None, status_path=None, log_path=None):
     super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     #TODO: Actually support abbrev.
     self.api_endpoint = api_endpoint
     self.timeout = timeout
     self.verify = verify
     self.cookie = cookie
+    if status_path and log_path:
+      self.work_times_files = WorkTimesFiles(modes=self.modes, hidden=self.hidden, abbrev=self.abbrev,
+                                             status_path=status_path, log_path=log_path)
+    else:
+      self.work_times_files = None
 
   #TODO: Finish implementing rest of the methods.
 
   def clear(self):
+    #TODO: Support --sync.
     self._make_request('/clear', method='post', timeout=self.timeout)
 
   def switch_mode(self, new_mode):
-    # Override this method in the parent, since it's a special case with web.
+    # Override this method from the parent, since it's a special case with web.
     self.validate_mode(new_mode)
     # Get the old status.
     old_mode, old_elapsed = self.get_status()
@@ -911,11 +943,15 @@ class WorkTimesWeb(WorkTimes):
       return old_mode, None
     # Make the switch.
     params = {'mode':new_mode}
+    if self.work_times_files:
+      self.work_times_files.set_status(new_mode)
+      #TODO: Sync worklog.txt too.
     self._make_request('/switch', method='post', data=params, timeout=self.timeout)
     return old_mode, old_elapsed
 
   def add_elapsed(self, mode, delta):
     # Override this method in the parent, since it's a special case with web.
+    #TODO: Support --sync.
     self.validate_mode(mode)
     params = {'mode':mode}
     if delta < 0:
@@ -926,15 +962,22 @@ class WorkTimesWeb(WorkTimes):
 
   def get_summary(self, numbers='values'):
     # Override this method in the parent, since it's a special case with web.
-    return self._make_request('?format=json&numbers={}'.format(numbers),
-                              format='json', timeout=self.timeout)
+    summary = self._make_request('?format=json&numbers={}'.format(numbers),
+                                 format='json', timeout=self.timeout)
+    if self.work_times_files:
+      self.work_times_files.write_summary(summary, current_inclusive=True)
+    return summary
 
   def get_status(self):
     summary = self.get_summary()
+    if self.work_times_files:
+      self.work_times_files.write_summary(summary, current_inclusive=True)
     return summary['current_mode'], summary['current_elapsed']
 
   def get_all_elapsed(self):
     summary = self.get_summary()
+    if self.work_times_files:
+      self.work_times_files.write_summary(summary, current_inclusive=True)
     all_elapsed = {}
     for elapsed in summary['elapsed']:
       all_elapsed[elapsed['mode']] = elapsed['time']
