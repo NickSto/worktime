@@ -420,11 +420,11 @@ class WorkTimesFiles(WorkTimes):
     if isinstance(log_path, pathlib.Path):
       self.log_path = log_path
     else:
-      log_path = pathlib.Path(log_path)
+      self.log_path = pathlib.Path(log_path)
     if isinstance(status_path, pathlib.Path):
       self.status_path = status_path
     else:
-      status_path = pathlib.Path(status_path)
+      self.status_path = pathlib.Path(status_path)
     self._log = None
 
   def clear(self):
