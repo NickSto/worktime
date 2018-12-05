@@ -37,6 +37,7 @@ def require_post_and_cookie(view):
   def wrapper(request):
     if request.method != 'POST':
       log.warning('Wrong method.')
+      #TODO: Return a 405 (Method Not Allowed)
       return HttpResponseRedirect(reverse('worktime_main'))
     if not request.COOKIES.get(COOKIE_NAME):
       log.warning('User sent no {!r} cookie.'.format(COOKIE_NAME))
@@ -63,9 +64,8 @@ def main(request):
   summary['modes_meta'] = MODES_META
   apply_colors(summary, COLORS)
   if params['format'] == 'html':
-    summary['debug'] = params['debug']
-    summary['modes_list'] = make_mode_list(MODES, MODES_META, abbrev)
-    return render(request, 'worktime/main.tmpl', summary)
+    context = build_context(summary, MODES, MODES_META, abbrev, params['debug'])
+    return render(request, 'worktime/main.tmpl', context)
   elif params['format'] == 'json':
     return HttpResponse(json.dumps(summary), content_type='application/json')
   elif params['format'] == 'plain':
@@ -76,6 +76,9 @@ def main(request):
     for ratio in summary['ratios']:
       lines.append('ratio\t{0}\t{timespan}\t{value}'.format(summary['ratio_str'], **ratio))
     return HttpResponse('\n'.join(lines), content_type=settings.PLAINTEXT)
+
+#TODO: For POSTs, let the client send a "redirect=false" parameter to avoid sending a redirect
+#      (that XMLHttpRequest automatically follows and loads). Return a 204 (or maybe 205?) instead.
 
 @csrf_exempt
 @require_post_and_cookie
@@ -208,6 +211,11 @@ def settings(request):
 
 
 ##### Helper functions #####
+
+def build_context(summary, modes, modes_meta, abbrev, debug):
+  summary['debug'] = debug
+  summary['modes_list'] = make_mode_list(MODES, MODES_META, abbrev)
+  return summary
 
 def apply_colors(summary, colors):
   for mode, mode_data in summary['modes_meta'].items():
