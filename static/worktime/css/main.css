@@ -54,17 +54,18 @@
 }
 
 /* When the screen is too small, stop the floats and go to one vertical column. */
-@media (max-width: 590px) {
+@media (max-width: 610px) {
   .abbrev .column {
     float: none !important;
   }
 }
 /* When we're not abbreviating mode names, do this earlier. */
-@media (max-width: 720px) {
+@media (max-width: 745px) {
   .noabbrev .column {
     float: none !important;
   }
 }
+/*TODO: Support super small screens, like iPhone 5 (320px). Currently gets wonky below 364px. */
 
 #connection-status {
   padding: 5px 10px;
@@ -214,6 +215,11 @@
 
 .button-group {
   display: inline-block;
+  margin-bottom: 10px;
+}
+
+.button-group:last-child {
+  margin-bottom: 0;
 }
 
 p.setting {

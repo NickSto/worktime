@@ -120,6 +120,8 @@
                   <p>
                     <strong>Switch</strong> mode to:
                   </p>
+                  <input class="ruhuman" name="site" type="text">
+                  <input type="hidden" name="debug" value="{{ debug }}">
                   {% for mode in modes_list %}
                     {% if forloop.first %}
                       <span class="button-group">
@@ -134,8 +136,6 @@
                       </span>
                     {% endif %}
                   {% endfor %}
-                  <input class="ruhuman" name="site" type="text">
-                  <input type="hidden" name="debug" value="{{ debug }}">
                 </form>
                 <form id="switch-era" name="switch-era" method="post" action="{% url 'worktime:switchera' %}">
                   {% csrf_token %}
