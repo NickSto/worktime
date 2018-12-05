@@ -564,7 +564,7 @@ function getOpacity(seconds) {
    * 15 minutes: 0.41
    * 1 hour:     0.19
    */
-  if (seconds === 0) {
+  if (seconds < 1) {
     return 1;
   }
   var rawOpacity = 11.0021/Math.log(seconds*1000);
