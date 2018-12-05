@@ -249,48 +249,51 @@ function updateStatus(summary) {
 function updateTotals(summary) {
   var totalsElem = document.getElementById('totals-table');
   removeAllChildren(totalsElem);
-  for (var i = 0; i < summary.elapsed.length; i++) {
-    var total = summary.elapsed[i];
-    var row = makeRow("", total.mode_name, total.time);
-    totalsElem.appendChild(row);
+  // Make header.
+  var headerValues = [""];
+  for (var c = 0; c < summary.ratios.length; c++) {
+    var ratio = summary.ratios[c];
+    headerValues.push(ratio.timespan);
   }
-  for (var i = 0; i < summary.ratios.length; i++) {
-    var ratio = summary.ratios[i];
-    if (i === 0) {
-      var rowspan = summary.ratios.length;
-      var name1 = summary.ratio_str;
-    } else {
-      var rowspan = null;
-      var name1 = null;
+  var rowElem = makeRow(headerValues, true);
+  totalsElem.appendChild(rowElem);
+  // Make totals rows.
+  for (var r = 0; r < summary.totals.length; r++) {
+    var total = summary.totals[r];
+    var rowValues = [total.mode];
+    for (var c = 0; c < total.times.length; c++) {
+      rowValues.push(total.times[c]);
     }
-    var row = makeRow(name1, ratio['timespan'], ratio['value'], rowspan);
-    totalsElem.appendChild(row);
+    var rowElem = makeRow(rowValues);
+    totalsElem.appendChild(rowElem);
   }
+  // Make ratio row.
+  var rowValues = [summary.ratio_str];
+  for (var c = 0; c < summary.ratios.length; c++) {
+    rowValues.push(summary.ratios[c].value);
+  }
+  var rowElem = makeRow(rowValues);
+  totalsElem.appendChild(rowElem);
 }
 
-function makeRow(name1, name2, value, rowspan) {
-  var row = document.createElement('tr');
-  if (name1 !== null) {
-    var name1Cell = document.createElement('td');
-    name1Cell.className = 'name';
-    if (name1 === "") {
-      name1Cell.classList.add('dummy');
+function makeRow(values, header) {
+  var rowElem = document.createElement("tr");
+  for (var v = 0; v < values.length; v++) {
+    if (header) {
+      var cellElem = document.createElement("th");
+      cellElem.className = "name";
+      cellElem.setAttribute("scope", "col");
+    } else {
+      var cellElem = document.createElement("td");
+      cellElem.className = "value";
     }
-    name1Cell.textContent = name1;
-    if (rowspan) {
-      name1Cell.setAttribute('rowspan', rowspan);
+    if (v === 0) {
+      cellElem.className = "name";
     }
-    row.appendChild(name1Cell);
+    cellElem.textContent = values[v];
+    rowElem.appendChild(cellElem);
   }
-  var name2Cell = document.createElement('td');
-  var valueCell = document.createElement('td');
-  name2Cell.className = 'name';
-  valueCell.className = 'value';
-  name2Cell.textContent = name2;
-  valueCell.textContent = value;
-  row.appendChild(name2Cell);
-  row.appendChild(valueCell);
-  return row;
+  return rowElem;
 }
 
 function updateHistory(summary) {

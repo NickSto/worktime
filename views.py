@@ -63,11 +63,11 @@ def main(request):
   summary['modes'] = MODES
   summary['modes_meta'] = MODES_META
   apply_colors(summary, COLORS)
+  context = build_context(summary, MODES, MODES_META, abbrev, params['debug'])
   if params['format'] == 'html':
-    context = build_context(summary, MODES, MODES_META, abbrev, params['debug'])
     return render(request, 'worktime/main.tmpl', context)
   elif params['format'] == 'json':
-    return HttpResponse(json.dumps(summary), content_type='application/json')
+    return HttpResponse(json.dumps(context), content_type='application/json')
   elif params['format'] == 'plain':
     lines = []
     lines.append('status\t{current_mode}\t{current_elapsed}'.format(**summary))
@@ -213,9 +213,30 @@ def settings(request):
 ##### Helper functions #####
 
 def build_context(summary, modes, modes_meta, abbrev, debug):
-  summary['debug'] = debug
-  summary['modes_list'] = make_mode_list(MODES, MODES_META, abbrev)
-  return summary
+  context = summary.copy()
+  context['debug'] = debug
+  context['modes_list'] = make_mode_list(MODES, MODES_META, abbrev)
+  context['totals'] = build_totals(summary, modes_meta)
+  return context
+
+def build_totals(summary, modes_meta):
+  modes = []
+  for elapsed_item in summary['elapsed']:
+    modes.append(elapsed_item['mode'])
+  totals = []
+  for mode in modes:
+    total = {'mode':modes_meta[mode]['disp_name'], 'times':[]}
+    for ratio in summary['ratios']:
+      if ratio['timespan'] == 'total':
+        time_str = '0'
+        for elapsed in summary['elapsed']:
+          if elapsed['mode'] == mode:
+            time_str = elapsed['time']
+      else:
+        time_str = timestring(ratio['totals'].get(mode, 0))
+      total['times'].append(time_str)
+    totals.append(total)
+  return totals
 
 def apply_colors(summary, colors):
   for mode, mode_data in summary['modes_meta'].items():

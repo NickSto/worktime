@@ -87,25 +87,29 @@
                   <h4>Totals</h4>
                   <table class="pane1 table-bordered table-condensed">
                     <tbody id="totals-table">
-                      {% for elapsed_line in elapsed %}
+                      <tr>
+                        <th class="name dummy"></th>
+                        {% for ratio in ratios %}
+                          <th class="name">{{ ratio.timespan }}</th>
+                        {% endfor %}
+                      </tr>
+                      {% for total in totals %}
                         <tr>
-                          <td class="name dummy"></td>
-                          <td class="name">{{ elapsed_line.mode_name }}</td>
-                          <td class="value">{{ elapsed_line.time }}</td>
+                          <td class="name">{{ total.mode }}</td>
+                          {% for time in total.times %}
+                            <td class="value">{{ time }}</td>
+                          {% endfor %}
                         </tr>
                       {% endfor %}
-                      {% for ratio in ratios %}
-                        <tr>
-                          {% if forloop.first %}
-                            <td class="name" rowspan="{{ ratios | length }}">{{ ratio_str }}</td>
-                          {% endif %}
-                          <td class="name">{{ ratio.timespan }}</td>
+                      <tr>
+                        <td class="name">{{ ratio_str }}</td>
+                        {% for ratio in ratios %}
                           <td class="value">{{ ratio.value }}</td>
-                        </tr>
-                      {% endfor %}
+                        {% endfor %}
+                      </tr>
                     </tbody>
                   </table>
-                </div>
+                </div> <!-- #totals -->
               </section> <!-- #stats -->
             </div> <!-- .column.pull-right -->
             <div class="column pull-left">

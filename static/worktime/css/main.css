@@ -167,6 +167,10 @@
   margin-right: 5px;
 }
 
+#totals th.name {
+  text-align: center;
+}
+
 #totals td {
   width: 4em;
   padding-left: 12px;
@@ -175,14 +179,6 @@
 
 #totals td.value {
   text-align: right;
-}
-
-#totals-table td.dummy {
-  border-right: none;
-}
-
-#totals-table td.dummy + td {
-  border-left: none;
 }
 
 .worktime-section form {
