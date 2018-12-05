@@ -66,6 +66,8 @@ def make_argparser():
   parser.add_argument('-s', '--sync', action='store_true',
     help='When using --web, sync the local state files with the web state. This will always '
          'overwrite the local state, and will never overwrite the web state with the local one.')
+  parser.add_argument('-S', '--summary',
+    help='When using --web, write the raw summary data to this file (in JSON).')
   parser.add_argument('-c', '--cookie',
     help='Authorization cookie to use when in --web mode.')
   parser.add_argument('-u', '--url', default=API_ENDPOINT,
@@ -99,7 +101,7 @@ def main(argv):
       log_path = None
     work_times = WorkTimesWeb(modes=MODES, hidden=HIDDEN, abbrev=args.abbrev, api_endpoint=args.url,
                               timeout=TIMEOUT, verify=args.verify, cookie=args.cookie,
-                              status_path=status_path, log_path=log_path)
+                              status_path=status_path, log_path=log_path, summary_path=args.summary)
   else:
     work_times = WorkTimesFiles(modes=MODES, hidden=HIDDEN, abbrev=args.abbrev,
                                 log_path=LOG_PATH, status_path=STATUS_PATH)
@@ -915,13 +917,18 @@ class WorkTimesDatabase(WorkTimes):
 class WorkTimesWeb(WorkTimes):
 
   def __init__(self, modes=MODES, hidden=HIDDEN, abbrev=True, api_endpoint=API_ENDPOINT,
-               timeout=TIMEOUT, verify=True, cookie=None, status_path=None, log_path=None):
+               timeout=TIMEOUT, verify=True, cookie=None, status_path=None, log_path=None,
+               summary_path=None):
     super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     #TODO: Actually support abbrev.
     self.api_endpoint = api_endpoint
     self.timeout = timeout
     self.verify = verify
     self.cookie = cookie
+    if isinstance(summary_path, pathlib.Path) or summary_path is None:
+      self.summary_path = summary_path
+    else:
+      self.summary_path = pathlib.Path(summary_path)
     if status_path and log_path:
       self.work_times_files = WorkTimesFiles(modes=self.modes, hidden=self.hidden, abbrev=self.abbrev,
                                              status_path=status_path, log_path=log_path)
@@ -966,6 +973,9 @@ class WorkTimesWeb(WorkTimes):
                                  format='json', timeout=self.timeout)
     if self.work_times_files:
       self.work_times_files.write_summary(summary, current_inclusive=True)
+    if self.summary_path:
+      with self.summary_path.open(mode='w') as summary_file:
+        summary_file.write(json.dumps(summary))
     return summary
 
   def get_status(self):
