@@ -970,14 +970,10 @@ class WorkTimesWeb(WorkTimes):
 
   def get_status(self):
     summary = self.get_summary()
-    if self.work_times_files:
-      self.work_times_files.write_summary(summary, current_inclusive=True)
     return summary['current_mode'], summary['current_elapsed']
 
   def get_all_elapsed(self):
     summary = self.get_summary()
-    if self.work_times_files:
-      self.work_times_files.write_summary(summary, current_inclusive=True)
     all_elapsed = {}
     for elapsed in summary['elapsed']:
       all_elapsed[elapsed['mode']] = elapsed['time']
