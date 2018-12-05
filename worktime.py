@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import collections
 import json
 import logging
 import os
@@ -324,6 +325,7 @@ class WorkTimes(object):
     elapsed = self.get_elapsed(mode)
     self.set_elapsed(mode, elapsed+delta)
 
+  #TODO: Separate display stuff from core logic.
   def get_summary(self, numbers='values', modes=('p', 'w')):
     summary = {}
     # Get the current status and how long it's been happening.
@@ -703,6 +705,9 @@ class WorkTimesDatabase(WorkTimes):
       data[total.mode] = total.elapsed
     return data
 
+  #TODO: Remove.
+  #      The parent class takes care of the basic interface, which is all get_summary() should be.
+  #      Instead, let the view call special methods for all the display-related stuff.
   def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
     try:
@@ -764,45 +769,45 @@ class WorkTimesDatabase(WorkTimes):
     except Period.DoesNotExist:
       current_period = None
     totals = []
-    for i in range(len(timespans)):
-      totals.append([0, 0])
+    for c in range(len(timespans)):
+      totals.append(collections.defaultdict(int))
     for period in list(periods) + [current_period]:
-      for i in 0, 1:
-        for c, cutoff in enumerate(cutoffs):
-          if period and (period.end is None or period.end >= cutoff) and period.mode == modes[i]:
-            if period.start >= cutoff:
-              totals[c][i] += period.elapsed
-            else:
-              totals[c][i] += period.elapsed - (cutoff-period.start)
+      for c, cutoff in enumerate(cutoffs):
+        if period and (period.end is None or period.end >= cutoff):
+          if period.start >= cutoff:
+            totals[c][period.mode] += period.elapsed
+          else:
+            totals[c][period.mode] += period.elapsed - (cutoff-period.start)
     #TODO: If an adjustment happened earlier than this cutoff, but during a period that ended after
     #      it, that might cause unnatural-feeling results. E.g. Maybe I left it on 'w' for an hour,
     #      but took a 30 min break and forgot to turn it off. So I did an adjustment of -30, but
     #      then left it on 'w' because I was back. This could possibly make a really weird ratio.
     for adjustment in Adjustment.objects.filter(era=era, timestamp__gte=min_cutoff):
-      for i in 0, 1:
-        for c, cutoff in enumerate(cutoffs):
-          if adjustment.timestamp >= cutoff and adjustment.mode == modes[i]:
-            # Expand the adjustment backward into a "virtual period" `delta` long, ending when
-            # the adjustment was made. Then, only count the part of this "virtual period" that's
-            # after the cutoff.
-            time_btwn_adj_and_cutoff = adjustment.timestamp - cutoff
-            if abs(adjustment.delta) > time_btwn_adj_and_cutoff:
-              sign = int(adjustment.delta / abs(adjustment.delta))
-              totals[c][i] += sign * time_btwn_adj_and_cutoff
-            else:
-              totals[c][i] += adjustment.delta
+      for c, cutoff in enumerate(cutoffs):
+        if adjustment.timestamp >= cutoff:
+          # Expand the adjustment backward into a "virtual period" `delta` long, ending when
+          # the adjustment was made. Then, only count the part of this "virtual period" that's
+          # after the cutoff.
+          time_btwn_adj_and_cutoff = adjustment.timestamp - cutoff
+          if abs(adjustment.delta) > time_btwn_adj_and_cutoff:
+            sign = int(adjustment.delta / abs(adjustment.delta))
+            totals[c][adjustment.mode] += sign * time_btwn_adj_and_cutoff
+          else:
+            totals[c][adjustment.mode] += adjustment.delta
     for c, timespan in enumerate(timespans):
-      ratio = {}
+      ratio = {'totals':totals[c]}
+      mode0 = modes[0]
+      mode1 = modes[1]
       logging.info('Totals for last {}s: {} in {}, {} in {}.'
-                   .format(timespan, totals[c][0], modes[0], totals[c][1], modes[1]))
+                   .format(timespan, totals[c][mode0], mode0, totals[c][mode1], mode1))
       # Store the value of the ratio.
-      if totals[c][1] == 0:
+      if totals[c][mode1] == 0:
         if numbers == 'values':
           ratio['value'] = float('inf')
         elif numbers == 'text':
           ratio['value'] = '∞'
       else:
-        ratio['value'] = totals[c][0]/totals[c][1]
+        ratio['value'] = totals[c][mode0]/totals[c][mode1]
         if numbers == 'text':
           ratio['value'] = '{:0.2f}'.format(ratio['value'])
       # Store the period of time the recent ratio is for.
