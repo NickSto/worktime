@@ -227,7 +227,7 @@ def build_totals(summary, modes_meta):
   for mode in modes:
     total = {'mode':modes_meta[mode]['disp_name'], 'times':[]}
     for ratio in summary['ratios']:
-      if ratio['timespan'] == 'total':
+      if ratio['timespan'] == 'total' or ratio['timespan'] == float('inf'):
         time_str = '0'
         for elapsed in summary['elapsed']:
           if elapsed['mode'] == mode:
