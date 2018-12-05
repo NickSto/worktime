@@ -26,6 +26,7 @@ MODES_META = {
   's': {'abbrev':'s', 'name':'stopped', 'hidden':True, 'opposite':None},
 }
 HIDDEN = [mode for mode, meta in MODES_META.items() if meta['hidden']]
+RATIO_MODES = ('p', 'w')
 DATA_DIR     = pathlib.Path('~/.local/share/nbsdata').expanduser()
 LOG_PATH     = DATA_DIR / 'worklog.txt'
 STATUS_PATH  = DATA_DIR / 'workstatus.txt'
@@ -114,7 +115,7 @@ def main(argv):
       message = '(was {})'.format(old_mode)
     else:
       message = '(added {} to {})'.format(timestring(old_elapsed), old_mode)
-    title, body = make_report(work_times.get_summary(), message)
+    title, body = make_report(work_times, message)
     feedback(title, body, stdout=args.stdout, notify=args.notify)
   else:
     command = args.arguments[0]
@@ -128,7 +129,7 @@ def main(argv):
       title, body = adjust(work_times, adjustments)
       feedback(title, body, stdout=args.stdout, notify=args.notify)
     elif command == 'status':
-      title, body = make_report(work_times.get_summary())
+      title, body = make_report(work_times)
       feedback(title, body, stdout=args.stdout, notify=args.notify)
     else:
       fail('Error: Invalid command {!r}.'.format(command))
@@ -167,27 +168,31 @@ def parse_adjustment(adjustment):
   return mode, delta*60
 
 
-def make_report(summary, message=None):
+def make_report(work_times, message=None):
   # Get the current status and how long it's been happening.
-  title = 'Status: {} '.format(summary['current_mode'])
+  mode, elapsed = work_times.get_status()
+  title = 'Status: {} '.format(mode)
   if message is None:
-    if summary['current_elapsed'] is not None:
-      title += timestring(summary['current_elapsed'])
+    if elapsed is not None:
+      title += timestring(elapsed)
   else:
     title += message
   # Format a list of all the current elapsed times.
   lines = []
-  for elapsed in summary['elapsed']:
-    lines.append('{}:\t{}'.format(elapsed['mode'], timestring(elapsed['time'])))
+  all_elapsed = work_times.get_all_elapsed()
+  for mode, elapsed in all_elapsed.items():
+    lines.append('{}:\t{}'.format(mode, timestring(elapsed)))
   body = '\n'.join(lines)
   # If requested, calculate the ratio of the times for the specified modes.
-  for ratio in summary['ratios']:
-    if ratio['timespan'] == float('inf') and ratio['value'] is not None:
-      if ratio['value'] == float('inf'):
-        ratio_value_str = '∞'
-      else:
-        ratio_value_str = '{:0.2f}'.format(ratio['value'])
-      body += '\n{}:\t{}'.format(summary['ratio_str'], ratio_value_str)
+  ratio = work_times.get_ratio(*RATIO_MODES, all_elapsed=all_elapsed)
+  if ratio is None:
+    return title, body
+  if ratio == float('inf'):
+    ratio_value_str = '∞'
+  else:
+    ratio_value_str = '{:0.2f}'.format(ratio)
+  ratio_label = '{}/{}'.format(*RATIO_MODES)
+  body += '\n{}:\t{}'.format(ratio_label, ratio_value_str)
   return title, body
 
 
@@ -326,7 +331,10 @@ class WorkTimes(object):
     self.set_elapsed(mode, elapsed+delta)
 
   #TODO: Separate display stuff from core logic.
-  def get_summary(self, numbers='values', modes=('p', 'w')):
+  #      Or maybe remove entirely? There may not be much of a point to a generic get_summary().
+  #      It's very difficult to efficiently serve the needs of all possible consumers of this data.
+  #      Instead, the consumer should use individual methods for their purpose.
+  def get_summary(self, numbers='values', modes=RATIO_MODES):
     summary = {}
     # Get the current status and how long it's been happening.
     current_mode, elapsed = self.get_status()
@@ -364,12 +372,7 @@ class WorkTimes(object):
         mode0 = get_mode_name(modes[0], abbrev=self.abbrev)
         mode1 = get_mode_name(modes[1], abbrev=self.abbrev)
         summary['ratio_str'] = '{}/{}'.format(mode0, mode1)
-      if modes[0] not in all_elapsed and modes[1] not in all_elapsed:
-        ratio_value = None
-      elif all_elapsed.get(modes[1], 0) == 0:
-        ratio_value = float('inf')
-      else:
-        ratio_value = all_elapsed.get(modes[0], 0) / all_elapsed.get(modes[1], 0)
+      ratio_value = self.get_ratio(modes[0], modes[1], all_elapsed=all_elapsed)
       if numbers == 'text':
         if ratio_value is None:
           ratio_value = 'None'
@@ -385,6 +388,16 @@ class WorkTimes(object):
       summary['ratio_str'] = None
       summary['ratios'] = []
     return summary
+
+  def get_ratio(self, num_mode, denom_mode, all_elapsed=None):
+    if all_elapsed is None:
+      all_elapsed = self.get_all_elapsed()
+    if num_mode not in all_elapsed and denom_mode not in all_elapsed:
+      return None
+    elif all_elapsed.get(denom_mode, 0) == 0:
+      return float('inf')
+    else:
+      return all_elapsed.get(num_mode, 0) / all_elapsed.get(denom_mode, 0)
 
   def get_status(self):
     """Return (mode, elapsed): the current mode string, and the number of seconds we've been in it."""
@@ -708,7 +721,7 @@ class WorkTimesDatabase(WorkTimes):
   #TODO: Remove.
   #      The parent class takes care of the basic interface, which is all get_summary() should be.
   #      Instead, let the view call special methods for all the display-related stuff.
-  def get_summary(self, numbers='values', modes=('p', 'w'), timespans=(6*60*60,)):
+  def get_summary(self, numbers='values', modes=RATIO_MODES, timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
     try:
       era = Era.objects.get(user=self.user, current=True)
@@ -752,7 +765,7 @@ class WorkTimesDatabase(WorkTimes):
         settings[setting] = getattr(self.user, setting)
     return settings
 
-  def _get_recent_ratios(self, timespans, numbers='values', modes=('p', 'w'), era=None):
+  def _get_recent_ratios(self, timespans, numbers='values', modes=RATIO_MODES, era=None):
     """Get ratios for only the last `timespan`s seconds."""
     ratios = []
     if era is None:
@@ -926,6 +939,7 @@ class WorkTimesWeb(WorkTimes):
                summary_path=None):
     super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     #TODO: Actually support abbrev.
+    #TODO: Use a cache.
     self.api_endpoint = api_endpoint
     self.timeout = timeout
     self.verify = verify
