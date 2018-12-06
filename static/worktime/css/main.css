@@ -241,13 +241,13 @@ td#ratio {
   border-bottom: none;
 }
 
-.button-group {
-  display: inline-block;
-  margin-bottom: 10px;
+#switch p.heading {
+  margin-bottom: 0;
 }
 
-.button-group:last-child {
-  margin-bottom: 0;
+.button-group {
+  display: inline-block;
+  margin-top: 10px;
 }
 
 p.setting {
