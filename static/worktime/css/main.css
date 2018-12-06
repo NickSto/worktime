@@ -182,6 +182,23 @@
   text-align: right;
 }
 
+td#ratio {
+  text-align: center;
+  font-size: 80%;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 8px;
+}
+
+#ratio p {
+  margin-bottom: 0;
+  width: 1.5em;
+}
+
+#ratio .numerator {
+  border-bottom: 1px solid #666;
+}
+
 .worktime-section form {
   border: 1px solid #ddd;
   padding: 15px;

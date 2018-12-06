@@ -268,7 +268,18 @@ function updateTotals(summary) {
     totalsElem.appendChild(rowElem);
   }
   // Make ratio row.
-  var rowValues = [summary.ratio_str];
+  var ratioLabelElem = document.createElement("td");
+  ratioLabelElem.id = "ratio";
+  ratioLabelElem.className = "name";
+  var numElem = document.createElement("p");
+  numElem.className = "numerator";
+  numElem.textContent = summary.ratio_meta.num;
+  var denomElem = document.createElement("p");
+  denomElem.className = "denominator";
+  denomElem.textContent = summary.ratio_meta.denom;
+  ratioLabelElem.appendChild(numElem);
+  ratioLabelElem.appendChild(denomElem);
+  var rowValues = [ratioLabelElem];
   for (var c = 0; c < summary.ratios.length; c++) {
     rowValues.push(summary.ratios[c].value);
   }
@@ -279,18 +290,23 @@ function updateTotals(summary) {
 function makeRow(values, header) {
   var rowElem = document.createElement("tr");
   for (var v = 0; v < values.length; v++) {
-    if (header) {
-      var cellElem = document.createElement("th");
-      cellElem.className = "name";
-      cellElem.setAttribute("scope", "col");
+    var value = values[v];
+    if (value instanceof HTMLElement) {
+      var cellElem = value;
     } else {
-      var cellElem = document.createElement("td");
-      cellElem.className = "value";
+      if (header) {
+        var cellElem = document.createElement("th");
+        cellElem.className = "name";
+        cellElem.setAttribute("scope", "col");
+      } else {
+        var cellElem = document.createElement("td");
+        cellElem.className = "value";
+      }
+      if (v === 0) {
+        cellElem.className = "name";
+      }
+      cellElem.textContent = value;
     }
-    if (v === 0) {
-      cellElem.className = "name";
-    }
-    cellElem.textContent = values[v];
     rowElem.appendChild(cellElem);
   }
   return rowElem;

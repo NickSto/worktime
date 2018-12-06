@@ -102,7 +102,14 @@
                         </tr>
                       {% endfor %}
                       <tr>
-                        <td class="name">{{ ratio_str }}</td>
+                        <td id="ratio" class="name">
+                          <p class="numerator">
+                            {{ ratio_meta.num }}
+                          </p>
+                          <p class="denominator">
+                            {{ ratio_meta.denom }}
+                          </p>
+                        </td>
                         {% for ratio in ratios %}
                           <td class="value">{{ ratio.value }}</td>
                         {% endfor %}

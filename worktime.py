@@ -741,6 +741,7 @@ class WorkTimesDatabase(WorkTimes):
     if timespans:
       ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
       summary['ratios'].extend(ratios)
+      summary['ratio_meta'] = {'num':RATIO_MODES[0], 'denom':RATIO_MODES[1]}
       timespan = list(sorted(timespans))[0]
       summary['history'] = {}
       summary['history']['periods'] = self._get_recent_bars(timespan, numbers=numbers, era=era)
