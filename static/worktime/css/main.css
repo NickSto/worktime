@@ -196,7 +196,14 @@ td#ratio {
 
 #ratio p {
   margin-bottom: 0;
+}
+
+.abbrev #ratio p {
   width: 1.5em;
+}
+
+.noabbrev #ratio p {
+  width: 3em;
 }
 
 #ratio .numerator {
