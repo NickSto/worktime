@@ -174,10 +174,10 @@
 
 #totals td.name {
   height: 35px;
+  text-align: center;
 }
 
 #totals td {
-  width: 4em;
   padding-left: 12px;
   padding-right: 12px;
 }
@@ -191,11 +191,12 @@ td#ratio {
   font-size: 90%;
   padding-top: 0;
   padding-bottom: 0;
-  padding-left: 8px;
 }
 
 #ratio p {
   margin-bottom: 0;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .abbrev #ratio p {
