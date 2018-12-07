@@ -723,6 +723,9 @@ class WorkTimesDatabase(WorkTimes):
   #      Instead, let the view call special methods for all the display-related stuff.
   def get_summary(self, numbers='values', modes=RATIO_MODES, timespans=(6*60*60,)):
     summary = super().get_summary(numbers=numbers, modes=modes)
+    #TODO: Remove this deletion once we've gotten rid of get_summary().
+    if 'ratio_str' in summary:
+      del summary['ratio_str']
     try:
       era = Era.objects.get(user=self.user, current=True)
       summary['era'] = era.description
@@ -740,6 +743,7 @@ class WorkTimesDatabase(WorkTimes):
     summary['eras'].sort(key=lambda era_dict: era_dict['name'])
     if timespans:
       ratios = self._get_recent_ratios(timespans, numbers, modes, era=era)
+      #TODO: Make 'ratios' a dict with keys 'num', 'denom', and 'timespans', which is the regular list.
       summary['ratios'].extend(ratios)
       summary['ratio_meta'] = {}
       summary['ratio_meta']['num'] = get_mode_name(RATIO_MODES[0], self.abbrev)
