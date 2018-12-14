@@ -35,11 +35,12 @@ function updateSummary(force) {
   // Only update when the tab is visible.
   // Note: This isn't supported in IE < 10, so if you want to support that, you should check:
   // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+  var loadingElem = document.getElementById("loading");
   function connectionWarn(event) {
     var connectionWarningElem = document.getElementById('connection-warning');
     warn(connectionWarningElem, "Could not connect to server");
+    loadingElem.style.display = "none";
   }
-  var loadingElem = document.getElementById("loading");
   //TODO: `force` is an event when this is called as an event listener.
   if (force === true || (settings.autoupdate && !document.hidden)) {
     loadingElem.style.display = "initial";
@@ -657,7 +658,9 @@ function flashWarning(message, warningElem, timespan) {
 }
 
 function formFailureWarn() {
-  flashWarning("Connection error. Action failed.")
+  flashWarning("Connection error. Action failed.");
+  var loadingElem = document.getElementById("loading");
+  loadingElem.style.display = "none";
 }
 
 function unhideJSelems() {
