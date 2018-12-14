@@ -172,6 +172,8 @@ def switchera(request):
     query_str = ''
   return HttpResponseRedirect(reverse('worktime_main')+query_str)
 
+#TODO: renamera()
+
 @csrf_exempt
 @require_post_and_cookie
 def clear(request):
@@ -189,7 +191,7 @@ def settings(request):
   params.add('site')
   params.parse(request.POST)
   if params['site']:
-    return warn_and_redirect_spambot('switchera', params['site'], reverse('worktime_main'))
+    return warn_and_redirect_spambot('settings', params['site'], reverse('worktime_main'))
   if params.invalid_value:
     log.warning('Invalid parameter.')
     return HttpResponseRedirect(reverse('worktime_main'))
