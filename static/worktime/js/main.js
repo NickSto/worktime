@@ -662,11 +662,12 @@ function formFailureWarn() {
 
 function unhideJSelems() {
   var jsElems = document.getElementsByClassName('javascript-only');
-  for (var i = 0; i < jsElems.length; i++) {
+  while (jsElems.length > 0) {
     //TODO: Might want to find a better solution than removing the class (not idempotent).
     //      I'd prefer to just change the display style directly, but there's no value I can find
-    //      whose effect is "act like it was never set" (no, surprisingly, "unset" doesn't do this).
-    jsElems[i].classList.remove("javascript-only");
+    //      whose effect is "act like it was never set" (no, surprisingly, neither "initial" nor
+    //      "unset" does this properly).
+    jsElems[0].classList.remove("javascript-only");
   }
 }
 
