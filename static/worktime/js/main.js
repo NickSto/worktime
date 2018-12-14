@@ -19,6 +19,8 @@ function main() {
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
   //TODO: Force update when changing a setting even when autoupdate is off.
 
+  var hideIntroButtonElem = document.getElementById("intro-hide");
+  hideIntroButtonElem.addEventListener("click", toggleIntro);
   var refreshButtonElem = document.getElementById("refresh-button");
   refreshButtonElem.addEventListener("click", refreshButtonAction);
   attachFormListener(submitForm);
@@ -143,6 +145,21 @@ function toggleAutoUpdate(event) {
   }
   //TODO: After turning it off, don't do that final update.
 };
+
+function toggleIntro(event) {
+  var buttonElem = event.target;
+  var introBodyElem = document.getElementById("intro-body");
+  if (buttonElem.dataset.action === "hide") {
+    introBodyElem.style.display = "none";
+    buttonElem.dataset.action = "show";
+    buttonElem.textContent = "Show";
+  } else if (buttonElem.dataset.action === "show") {
+    introBodyElem.style.display = "inherit";
+    buttonElem.dataset.action = "hide";
+    buttonElem.textContent = "Hide";
+  }
+  //TODO: Persist in user setting.
+}
 
 function initSettings(settings) {
   var formElem = document.querySelector('form[name="settings"]');
