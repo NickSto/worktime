@@ -8,9 +8,29 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid">
+    <div id="main" class="container-fluid">
 
       <h2 id="title">Worktime</h2>
+
+      <section id="intro" class="panel panel-default">
+        <div class="panel-heading">
+          <h3>About</h3>
+        </div>
+        <div class="panel-body">
+          <section>
+            <h4>Worktime</h4>
+            <p>This is a tool I wrote to help me keep track of my productivity and breaks. With it, I can track how long I've spent working and how long I've spent on breaks.</p>
+            <p>It shows a timeline of my recent history of work/play periods, and breaks them down in different ways. I find the feedback useful in keeping myself focused and productive. It's really helpful to be able to keep an eye on a statistic like my recent work/play ratio to motivate me to get back to work.</p>
+          </section>
+          <section>
+            <h4>How to use it</h4>
+            <p>First, you might want to name your project. You can do this where it says "Start a new project". Projects let you separate your history into different tasks, so you can track your time spent dealing with email differently than your time spent writing a paper.</p>
+            <p>Then, select a mode under "Switch mode". Currently I have four modes. Any time I'm actually focused on the task is work, and any time spent reading news, watching videos, etc. is play. I put in "neutral" in order to have a sort of in-between mode. I use this for time where I'm not exactly relaxing, but it's not the task I sat down to do. Work email is an example. And "stopped" is for when you're off the clock. In the future I might let users define their own modes.</p>
+            <p>The "Adjust" section is there because inevitably I'll often forget to switch modes when I start/stop working. So you can correct the numbers a bit after the fact.</p>
+            <p>Your history is kept on the server and associated with your browser. It'll remain until you clear your cookies. There is a facility to associate multiple browsers with the same history, which lets me access it from my phone, tablet, etc. Sorry, though, it's not user-accessible (yet).</p>
+          </section>
+        </div>
+      </section>
 
       <section id="main-display" class="panel panel-default {% if settings.abbrev %}abbrev{% else %}noabbrev{% endif %}">
         <div class="panel-heading">
