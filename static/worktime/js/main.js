@@ -2,6 +2,7 @@
 
 var settings = {autoupdate:true, abbrev:false};
 var lastUpdate = Date.now()/1000;
+var renameButtonClicked = false;
 
 function main() {
   unhideJSelems();
@@ -19,11 +20,18 @@ function main() {
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
   //TODO: Force update when changing a setting even when autoupdate is off.
 
+  hideEraField();
+  var eraNameElem = document.getElementById("era-name");
+  var eraRenameElem = document.getElementById("era-rename");
+  var eraRenameSubmitElem = document.getElementById("era-rename-submit");
+  eraNameElem.addEventListener("click", showEraField);
+  eraRenameElem.addEventListener("blur", hideOrSubmitEra, true);
+  eraRenameSubmitElem.addEventListener("click", registerClick);
   var hideIntroButtonElem = document.getElementById("intro-hide");
   hideIntroButtonElem.addEventListener("click", toggleIntro);
   var refreshButtonElem = document.getElementById("refresh-button");
   refreshButtonElem.addEventListener("click", refreshButtonAction);
-  attachFormListener(submitForm);
+  attachListenerToAllForms(submitForm);
   addPopupListeners(historyBarElem);
   arrangeAdjustments(adjustmentsBarElem);
   window.setInterval(updateSummary, 30*1000);
@@ -115,7 +123,7 @@ function updateConnection() {
   //      update. Color it something weird like purple.
 }
 
-function attachFormListener(formListener) {
+function attachListenerToAllForms(formListener) {
   var buttons = document.getElementsByTagName("button");
   var submits = document.querySelectorAll('input[type="submit"]');
   var elementLists = [buttons, submits];
@@ -160,6 +168,55 @@ function toggleIntro(event) {
     buttonElem.textContent = "Hide";
   }
   //TODO: Persist in user setting.
+}
+
+function showEraField() {
+  var eraNameElem = document.getElementById("era-name");
+  var eraRenameElem = document.getElementById("era-rename");
+  var eraRenameFieldElem = document.getElementById("era-rename-field");
+  eraNameElem.style.display = "none";
+  eraRenameElem.style.display = "block";
+  eraRenameFieldElem.focus();
+}
+
+function hideEraField() {
+  var eraNameElem = document.getElementById("era-name");
+  var eraRenameElem = document.getElementById("era-rename");
+  var eraRenameFieldElem = document.getElementById("era-rename-field");
+  eraNameElem.textContent = eraRenameFieldElem.value;
+  eraNameElem.style.display = "inline-block";
+  eraRenameElem.style.display = "none";
+}
+
+function hideOrSubmitEra(event) {
+  function hideEraIfNotSubmitted() {
+    if (!renameButtonClicked) {
+      hideEraField();
+    }
+    renameButtonClicked = false;
+  }
+  window.setTimeout(hideEraIfNotSubmitted, 200);
+}
+
+function registerClick(event) {
+  if (document.activeElement.id === "era-rename-submit") {
+    renameButtonClicked = true;
+  }
+}
+
+function getSiblingSubmit(elem) {
+  var parentElem = elem.parentElement;
+  var submitElem = null;
+  for (var i = 0; i < parentElem.children.length; i++) {
+    var child = parentElem.children[i];
+    if (child.tagName === "INPUT" && child.type === "submit") {
+      submitElem = parentElem.children[i];
+    }
+  }
+  if (!submitElem) {
+    console.log("Error: did not find the submitElem.");
+  }
+  return submitElem;
 }
 
 function initSettings(settings) {
@@ -216,14 +273,19 @@ function updateParent(summary) {
 
 function updateEras(summary) {
   var eraNameElem = document.getElementById('era-name');
+  var eraRenameFieldElem = document.getElementById("era-rename-field");
   var chooseEraElem = document.getElementById('choose-era');
   var eraSelectElem = document.getElementById('era-select');
   var createEraPromptElem = document.getElementById('create-era-prompt');
-  if (summary.era) {
-    eraNameElem.textContent = summary.era;
-  } else {
-    eraNameElem.textContent = "Worktime";
+  // Update current era display.
+  if (eraNameElem.style.display !== "none") {
+    if (summary.era) {
+      eraNameElem.textContent = eraRenameFieldElem.value = summary.era;
+    } else {
+      eraNameElem.textContent = eraRenameFieldElem.value = "Worktime";
+    }
   }
+  // Update list of eras in switch dialog.
   if (summary.eras.length > 0) {
     chooseEraElem.style.display = "initial";
     if (createEraPromptElem.children.length > 0) {
@@ -749,8 +811,10 @@ function submitForm(event) {
     form.append(event.target.name, event.target.value);
   }
   makeRequest("POST", formElem.action, updateSummary, formFailureWarn, form);
-  var fields = getFormFields(formElem);
-  clearFields(fields);
+  if (formElem.id !== "era-rename") {
+    var fields = getFormFields(formElem);
+    clearFields(fields);
+  }
 }
 
 function getFormFields(rootNode) {
