@@ -172,7 +172,31 @@ def switchera(request):
     query_str = ''
   return HttpResponseRedirect(reverse('worktime_main')+query_str)
 
-#TODO: renamera()
+@require_post_and_cookie
+def renamera(request):
+  params = QueryParams()
+  params.add('name')
+  params.add('debug', type=boolish)
+  params.add('site')
+  params.parse(request.POST)
+  if params['site']:
+    return warn_and_redirect_spambot('renamera', params['site'], reverse('worktime_main'))
+  if params['debug']:
+    query_str = '?debug=true'
+  else:
+    query_str = ''
+  if not params['name']:
+    log.warning('Missing or empty name parameter: {!r}'.format(params['name']))
+    return HttpResponseRedirect(reverse('worktime_main')+query_str)
+  user = get_or_create_user(request)
+  assert user is not None
+  work_times = WorkTimesDatabase(user)
+  era = get_or_create_era(user, params['name'])
+  if era.description != params['name']:
+    era.description = params['name']
+    era.save()
+  return HttpResponseRedirect(reverse('worktime_main')+query_str)
+
 
 @csrf_exempt
 @require_post_and_cookie
