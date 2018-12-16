@@ -2,7 +2,8 @@
 
 var settings = {autoupdate:true, abbrev:false};
 var lastUpdate = Date.now()/1000;
-var renameButtonClicked = false;
+var clickedId = null;
+var lastClickCheck = 0;
 
 function main() {
   setCssToJsEnabled();
@@ -189,18 +190,28 @@ function hideEraField() {
 
 function hideOrSubmitEra(event) {
   function hideEraIfNotSubmitted() {
-    if (!renameButtonClicked) {
+    if (clickedId !== "era-rename-submit") {
       hideEraField();
+    } else {
+      window.setTimeout(hideEraIfNotSubmitted, 200);
     }
-    renameButtonClicked = false;
   }
   window.setTimeout(hideEraIfNotSubmitted, 200);
 }
 
 function registerClick(event) {
-  if (document.activeElement.id === "era-rename-submit") {
-    renameButtonClicked = true;
+  if (document.activeElement) {
+    clickedId = document.activeElement.id;
+  } else {
+    clickedId = null;
   }
+  lastClickCheck = ourClickCheck = Date.now()/1000;
+  function timeOutClick() {
+    if (lastClickCheck === ourClickCheck) {
+      clickedId = null;
+    }
+  }
+  window.setTimeout(timeOutClick, 400);
 }
 
 function getSiblingSubmit(elem) {
