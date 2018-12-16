@@ -5,7 +5,7 @@ var lastUpdate = Date.now()/1000;
 var renameButtonClicked = false;
 
 function main() {
-  unhideJSelems();
+  setCssToJsEnabled();
 
   var historyBarElem = document.getElementById('history-bar');
   var connectionElem = document.getElementById('connection-status');
@@ -20,7 +20,6 @@ function main() {
   autoUpdateToggleElem.addEventListener("click", toggleAutoUpdate);
   //TODO: Force update when changing a setting even when autoupdate is off.
 
-  hideEraField();
   var eraNameElem = document.getElementById("era-name");
   var eraRenameElem = document.getElementById("era-rename");
   var eraRenameSubmitElem = document.getElementById("era-rename-submit");
@@ -725,14 +724,11 @@ function formFailureWarn() {
   loadingElem.style.display = "none";
 }
 
-function unhideJSelems() {
-  var jsElems = document.getElementsByClassName('javascript-only');
+function setCssToJsEnabled() {
+  var jsElems = document.getElementsByClassName("no-js");
   while (jsElems.length > 0) {
-    //TODO: Might want to find a better solution than removing the class (not idempotent).
-    //      I'd prefer to just change the display style directly, but there's no value I can find
-    //      whose effect is "act like it was never set" (no, surprisingly, neither "initial" nor
-    //      "unset" does this properly).
-    jsElems[0].classList.remove("javascript-only");
+    jsElems[0].classList.add("yes-js");
+    jsElems[0].classList.remove("no-js");
   }
 }
 

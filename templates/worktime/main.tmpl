@@ -8,14 +8,14 @@
 {% endblock %}
 
 {% block content %}
-    <div id="main" class="container-fluid">
+    <div id="main" class="container-fluid no-js">
 
       <h2 id="title">Worktime</h2>
 
       <section id="intro" class="panel panel-default">
         <div class="panel-heading">
           <h3>About</h3>
-          <button id="intro-hide" class="btn btn-default pull-right javascript-only" data-action="hide">Hide</button>
+          <button id="intro-hide" class="btn btn-default pull-right" data-action="hide">Hide</button>
           <div class="clearfix"></div>
         </div>
         <div class="panel-body" id="intro-body">
@@ -235,7 +235,7 @@
                 <form name="settings" method="post" action="{% url 'worktime:settings' %}">
                   {% csrf_token %}
                   <input class="ruhuman" name="site" type="text">
-                  <p class="setting javascript-only">
+                  <p id="autoupdate" class="setting">
                     {% if settings.autoupdate %}
                       <button class="btn btn-default active" name="autoupdate" value="off" id="autoupdate-toggle">on</button>
                     {% else %}

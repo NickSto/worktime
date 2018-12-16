@@ -1,8 +1,4 @@
 
-.javascript-only {
-  display: none;
-}
-
 .shrink-wrap {
   display: inline-block;
   width: auto;
@@ -40,7 +36,15 @@
   padding: 0 5px;
 }
 
-#era-name {
+.no-js #intro-hide {
+  display: none;
+}
+
+.no-js #era-name {
+  display: none;
+}
+
+.yes-js #era-rename {
   display: none;
 }
 
@@ -334,4 +338,8 @@ form#clear {
 
 #clear button {
   margin: 15px;
+}
+
+.no-js #autoupdate {
+  display: none;
 }
