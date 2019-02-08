@@ -334,6 +334,7 @@ class WorkTimes(object):
   #      Or maybe remove entirely? There may not be much of a point to a generic get_summary().
   #      It's very difficult to efficiently serve the needs of all possible consumers of this data.
   #      Instead, the consumer should use individual methods for their purpose.
+  #      Proposal: Maybe keep, but pass in a list of stats the user desires.
   def get_summary(self, numbers='values', modes=RATIO_MODES):
     summary = {}
     # Get the current status and how long it's been happening.
@@ -814,6 +815,12 @@ class WorkTimesDatabase(WorkTimes):
             totals[c][adjustment.mode] += sign * time_btwn_adj_and_cutoff
           else:
             totals[c][adjustment.mode] += adjustment.delta
+    # Make sure there are no negative totals.
+    for timespan_totals in totals:
+      for mode in timespan_totals.keys():
+        if timespan_totals[mode] < 0:
+          timespan_totals[mode] = 0
+    # Calculate the ratios.
     for c, timespan in enumerate(timespans):
       ratio = {'totals':totals[c]}
       mode0 = modes[0]
