@@ -10,6 +10,11 @@ MODE_MAX_LEN = 63
 #TODO: Link complementary `Adjustment`s where time is taken from one mode and added to another.
 #      Add a `OneToOneField` to `Adjustment` linking pairs of adjustments.
 #      - or maybe make a new `Adjustment` type for a move from one mode to another.
+#      - OR! Just add a `dest` field, storing the mode the time went to.
+#        - Backward compatible with old code that doesn't know/care about moves.
+#          - To actually get backward compatibility, I'd have to create a pair of `Adjustment`s for
+#            each move, which creates a duplication problem.
+#            - To not double-count them, then, I'd have to add a `duplicate` field or something.
 #      Add UI for "Move [ ] from [ ] to [ ]".
 #      - might have to progressively enhance a set of radio buttons for selecting the from mode.
 #        - can't style radio buttons to look like the other buttons on the page.
@@ -44,6 +49,11 @@ class Era(ModelMixin, models.Model):
   user = models.ForeignKey(User, models.SET_NULL, null=True, blank=True)
   description = models.CharField(max_length=255)
   current = models.BooleanField()
+  def __str__(self):
+    if self.description:
+      return self.description
+    else:
+      return 'Era {}'.format(self.id)
   def __repr__(self):
     return ('{}(user={!r}, current={!r}, description={!r})'
             .format(type(self).__name__, self.user, self.current, self.description))
@@ -60,12 +70,31 @@ class Period(ModelMixin, models.Model):
       return self.end - self.start
     else:
       return int(time.time()) - self.start
+  def __str__(self):
+    return '{} {}min'.format(self.mode, round(self.elapsed/60))
+  def __repr__(self):
+    if self.prev:
+      prev = '<Period>'
+    else:
+      prev = None
+    if self.era.description:
+      era = self.era.description
+    else:
+      era = self.era.id
+    return ('{}(id={}, era=<{}>, mode={!r}, start={}, end={}, prev={})'
+            .format(type(self).__name__, self.id, era, self.mode, self.start, self.end, prev))
 
 class Adjustment(ModelMixin, models.Model):
   mode = models.CharField(max_length=MODE_MAX_LEN)
   delta = models.IntegerField()
   timestamp = models.BigIntegerField()
   era = models.ForeignKey(Era, models.SET_NULL, null=True, blank=True)
+  def __str__(self):
+    if self.delta < 0:
+      sign = ''
+    else:
+      sign = '+'
+    return '{}{}{}min'.format(self.mode, sign, round(self.delta/60))
 
 class Total(ModelMixin, models.Model):
   """The total number of seconds we've spent in each mode, including all Adjustments, but NOT
@@ -73,6 +102,8 @@ class Total(ModelMixin, models.Model):
   mode = models.CharField(max_length=MODE_MAX_LEN)
   elapsed = models.IntegerField(default=0)
   era = models.ForeignKey(Era, models.SET_NULL, null=True, blank=True)
+  def __str__(self):
+    return '{} {:0.1f}hr'.format(self.mode, self.elapsed/60/60)
 
 class Cookie(ModelMixin, models.Model):
   user = models.ForeignKey(User, models.SET_NULL, null=True, blank=True)
