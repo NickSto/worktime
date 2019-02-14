@@ -495,8 +495,11 @@ class WorkTimesFiles(WorkTimes):
     # Write the given summary data to the files.
     now = int(time.time())
     current_mode = summary['current_mode']
-    mode_start = now-summary['current_elapsed']
-    status = {current_mode:mode_start}
+    if current_mode is None:
+      status = {}
+    else:
+      mode_start = now-summary['current_elapsed']
+      status = {current_mode:mode_start}
     self._write_file(status, self.status_path)
     self._log = {}
     for elapsed_data in summary['elapsed']:
