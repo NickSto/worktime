@@ -956,7 +956,6 @@ class WorkTimesWeb(WorkTimes):
                summary_path=None):
     super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     #TODO: Actually support abbrev.
-    #TODO: Use a cache.
     self.api_endpoint = api_endpoint
     self.timeout = timeout
     self.verify = verify
@@ -970,11 +969,14 @@ class WorkTimesWeb(WorkTimes):
                                              status_path=status_path, log_path=log_path)
     else:
       self.work_times_files = None
+    # Cache of current status.
+    self._summary = None
 
   #TODO: Finish implementing rest of the methods.
 
   def clear(self):
     #TODO: Support --sync.
+    self._summary = None
     self._make_request('/clear', method='post', timeout=self.timeout)
 
   def switch_mode(self, new_mode):
@@ -989,6 +991,8 @@ class WorkTimesWeb(WorkTimes):
     if self.work_times_files:
       self.work_times_files.set_status(new_mode)
       #TODO: Sync worklog.txt too.
+    # Invalidate the cache right before the change.
+    self._summary = None
     self._make_request('/switch', method='post', data=params, timeout=self.timeout)
     return old_mode, old_elapsed
 
@@ -996,6 +1000,7 @@ class WorkTimesWeb(WorkTimes):
     # Override this method in the parent, since it's a special case with web.
     #TODO: Support --sync.
     self.validate_mode(mode)
+    self._summary = None
     params = {'mode':mode}
     if delta < 0:
       params['subtract'] = abs(delta)//60
@@ -1005,14 +1010,15 @@ class WorkTimesWeb(WorkTimes):
 
   def get_summary(self, numbers='values'):
     # Override this method in the parent, since it's a special case with web.
-    summary = self._make_request('?format=json&numbers={}'.format(numbers),
-                                 format='json', timeout=self.timeout)
+    if self._summary is None:
+      self._summary = self._make_request('?format=json&numbers={}'.format(numbers),
+                                         format='json', timeout=self.timeout)
     if self.work_times_files:
-      self.work_times_files.write_summary(summary, current_inclusive=True)
+      self.work_times_files.write_summary(self._summary, current_inclusive=True)
     if self.summary_path:
       with self.summary_path.open(mode='w') as summary_file:
-        summary_file.write(json.dumps(summary))
-    return summary
+        summary_file.write(json.dumps(self._summary))
+    return self._summary
 
   def get_status(self):
     summary = self.get_summary()
