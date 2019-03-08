@@ -171,12 +171,18 @@ def parse_adjustment(adjustment):
 def make_report(work_times, message=None):
   # Get the current status and how long it's been happening.
   mode, elapsed = work_times.get_status()
-  title = 'Status: {} '.format(mode)
+  era = None
+  if hasattr(work_times, 'get_era'):
+    era = work_times.get_era()
+  if era:
+    title = 'Status: {}    {} '.format(era, mode)
+  else:
+    title = 'Status: {} '.format(mode)
   if message is None:
     if elapsed is not None:
       title += timestring(elapsed)
   else:
-    title += message
+    title += '  '+message
   # Format a list of all the current elapsed times.
   lines = []
   all_elapsed = work_times.get_all_elapsed()
@@ -1023,6 +1029,10 @@ class WorkTimesWeb(WorkTimes):
   def get_status(self):
     summary = self.get_summary()
     return summary['current_mode'], summary['current_elapsed']
+
+  def get_era(self):
+    summary = self.get_summary()
+    return summary.get('era')
 
   def get_all_elapsed(self):
     summary = self.get_summary()
