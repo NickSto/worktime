@@ -567,9 +567,15 @@ class WorkTimesFiles(WorkTimes):
 
 class WorkTimesDatabase(WorkTimes):
 
-  def __init__(self, user=None, modes=MODES, hidden=HIDDEN, abbrev=True):
+  def __init__(self, user=None, era=None, modes=MODES, hidden=HIDDEN, abbrev=True):
     super().__init__(modes=modes, hidden=hidden, abbrev=abbrev)
     self.user = user
+    if era is None:
+      try:
+        era = Era.objects.get(user=self.user, current=True)
+      except Era.DoesNotExist:
+        era = None
+    self.era = era
 
   def clear(self, new_description=''):
     # Create a new Era
@@ -623,9 +629,8 @@ class WorkTimesDatabase(WorkTimes):
   def get_status(self, era=None):
     # Get the current Era, if not already given.
     if era is None:
-      try:
-        era = Era.objects.get(user=self.user, current=True)
-      except Era.DoesNotExist:
+      era = self.era
+      if era is None:
         return None, None
     # Get the current Period.
     try:
