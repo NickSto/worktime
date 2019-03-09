@@ -3,7 +3,7 @@ import logging
 import time
 from django.conf import settings
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed
 from django.shortcuts import render, reverse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Era, Period, User, Cookie
@@ -37,8 +37,7 @@ def require_post_and_cookie(view):
   def wrapper(request):
     if request.method != 'POST':
       log.warning('Wrong method.')
-      #TODO: Return a 405 (Method Not Allowed)
-      return HttpResponseRedirect(reverse('worktime_main'))
+      return HttpResponseNotAllowed(['POST'])  # HTTP 405 Method Not Allowed
     if not request.COOKIES.get(COOKIE_NAME):
       log.warning('User sent no {!r} cookie.'.format(COOKIE_NAME))
       return HttpResponseRedirect(reverse('worktime_main'))
