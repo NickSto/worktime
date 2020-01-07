@@ -1,3 +1,4 @@
+import datetime
 import logging
 import time
 from django.db import models
@@ -5,7 +6,6 @@ from django.utils import timezone as utils_timezone
 from utils import ModelMixin
 log = logging.getLogger(__name__)
 MODE_MAX_LEN = 63
-
 
 #TODO: Link complementary `Adjustment`s where time is taken from one mode and added to another.
 #      Add a `OneToOneField` to `Adjustment` linking pairs of adjustments.
@@ -28,7 +28,8 @@ class User(ModelMixin, models.Model):
   name = models.CharField(max_length=255)
   autoupdate = models.BooleanField(default=True)
   abbrev = models.BooleanField(default=False)
-  SETTINGS = ('autoupdate', 'abbrev')
+  showIntro = models.BooleanField(default=True)
+  SETTINGS = ('autoupdate', 'abbrev', 'showIntro')
   def __str__(self):
     return self.name
   def __repr__(self):
@@ -70,6 +71,12 @@ class Period(ModelMixin, models.Model):
       return self.end - self.start
     else:
       return int(time.time()) - self.start
+  @property
+  def start_human(self):
+    return timestamp_to_str(self.start)
+  @property
+  def end_human(self):
+    return timestamp_to_str(self.end)
   def __str__(self):
     return '{} {}min'.format(self.mode, round(self.elapsed/60))
   def __repr__(self):
@@ -89,6 +96,9 @@ class Adjustment(ModelMixin, models.Model):
   delta = models.IntegerField()
   timestamp = models.BigIntegerField()
   era = models.ForeignKey(Era, models.SET_NULL, null=True, blank=True)
+  @property
+  def timestamp_human(self):
+    return timestamp_to_str(self.timestamp)
   def __str__(self):
     if self.delta < 0:
       sign = ''
@@ -114,3 +124,9 @@ class Cookie(ModelMixin, models.Model):
   def __repr__(self):
     return ('{}(user={!r}, name={!r}, value={!r})'
             .format(type(self).__name__, self.user, self.name, self.value))
+
+
+def timestamp_to_str(timestamp):
+  """Turn a unix timestamp like 1569608586 into a human-readable date/time string like
+  '2019-09-27 18:23:06'"""
+  return str(datetime.datetime.fromtimestamp(timestamp))

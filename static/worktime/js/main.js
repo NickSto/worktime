@@ -159,15 +159,20 @@ function toggleIntro(event) {
   var buttonElem = event.target;
   var introBodyElem = document.getElementById("intro-body");
   if (buttonElem.dataset.action === "hide") {
-    introBodyElem.style.display = "none";
+    introBodyElem.classList.add("hidden");
     buttonElem.dataset.action = "show";
     buttonElem.textContent = "Show";
   } else if (buttonElem.dataset.action === "show") {
-    introBodyElem.style.display = "inherit";
+    introBodyElem.classList.remove("hidden");
     buttonElem.dataset.action = "hide";
     buttonElem.textContent = "Hide";
   }
-  //TODO: Persist in user setting.
+  // Persist this hiding or unhiding in the User settings.
+  var event = {
+    target: document.querySelector('button[name="showIntro"]'),
+    preventDefault: function(){}
+  };
+  submitForm(event);
 }
 
 function showEraField() {
@@ -635,6 +640,7 @@ function showPopup(event) {
   fadeOut(popupElem, 5);
 }
 
+//TODO: Replace with CSS transition?
 function fadeOut(element, timespan, endAction) {
   if (endAction === undefined) {
     endAction = function(element) {
@@ -683,6 +689,7 @@ function getOpacity(seconds) {
   return Math.max(0.1, Math.min(1, opacityRounded));
 }
 
+//TODO: Replace with CSS transition?
 function flashGreen(element, delay) {
   /* Highlight an element with a green background that quickly fades out. */
   if (delay === undefined) {
@@ -780,6 +787,7 @@ function formatTime(quantity, unit) {
 function makeRequest(method, url, callback, errorCallback, data) {
   var request = new XMLHttpRequest();
   request.responseType = 'json';
+  //TODO: Wrap callback in our own which first checks that request.status === 200.
   request.addEventListener('load', callback, true);
   if (errorCallback) {
     request.addEventListener('error', errorCallback, true);
@@ -795,7 +803,7 @@ function makeRequest(method, url, callback, errorCallback, data) {
 function getAncestor(descendent, ancestorTag) {
   // Find the enclosing <ancestorTag> element of descendent.
   var elem = descendent;
-  while (elem.tagName !== ancestorTag && elem !== null) {
+  while (elem !== null && elem.tagName !== ancestorTag) {
     elem = elem.parentElement;
   }
   if (elem === null) {

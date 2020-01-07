@@ -15,10 +15,10 @@
       <section id="intro" class="panel panel-default">
         <div class="panel-heading">
           <h3>About</h3>
-          <button id="intro-hide" class="btn btn-default pull-right" data-action="hide">Hide</button>
+          <button id="intro-hide" class="btn btn-default pull-right" data-action="{% if settings.showIntro %}hide">Hide{% else %}show">Show{% endif %}</button>
           <div class="clearfix"></div>
         </div>
-        <div class="panel-body" id="intro-body">
+        <div class="panel-body{% if not settings.showIntro %} hidden{% endif %}" id="intro-body">
           <!-- TODO: Replace with an interactive tour, demo data, and a blog post. -->
           <section>
             <h4>What this is</h4>
@@ -250,6 +250,13 @@
                       <button class="btn btn-default ajaxable" name="abbrev" value="on">off</button>
                     {% endif %}
                     Abbreviate modes
+                  </p>
+                  <p id="showIntro" class="setting hidden">
+                    {% if settings.showIntro %}
+                      <button name="showIntro" value="off">on</button>
+                    {% else %}
+                      <button name="showIntro" value="on">off</button>
+                    {% endif %}
                   </p>
                 </form>
               </section> <!-- #settings -->
