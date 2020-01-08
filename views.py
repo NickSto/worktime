@@ -11,6 +11,7 @@ from .worktime import MODES, MODES_META, WorkTimesDatabase, timestring
 from utils.queryparams import QueryParams, boolish
 log = logging.getLogger(__name__)
 
+HONEY_NAME = settings.HONEYPOT_NAME
 HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
 DEFAULT_ERA_NAME = 'Project 1'
@@ -62,7 +63,9 @@ def main(request):
   summary['modes'] = MODES
   summary['modes_meta'] = MODES_META
   apply_colors(summary, COLORS)
-  context = build_context(summary, MODES, MODES_META, abbrev, params['debug'])
+  context = build_context(summary, MODES, MODES_META, abbrev)
+  context['debug'] = params['debug']
+  context['HONEY_NAME'] = HONEY_NAME
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', context)
   elif params['format'] == 'json':
@@ -85,10 +88,10 @@ def switch(request):
   params = QueryParams()
   params.add('mode', choices=MODES)
   params.add('debug', type=boolish)
-  params.add('site')
+  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params['site']:
-    return warn_and_redirect_spambot('switch', params['site'], reverse('worktime_main'))
+  if params[HONEY_NAME]:
+    return warn_and_redirect_spambot('switch', params[HONEY_NAME], reverse('worktime_main'))
   if params.invalid_value:
     log.warning('Invalid parameter.')
     return HttpResponseRedirect(reverse('worktime_main'))
@@ -111,10 +114,10 @@ def adjust(request):
   params.add('add', type=int)
   params.add('subtract', type=int)
   params.add('debug', type=boolish)
-  params.add('site')
+  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params['site']:
-    return warn_and_redirect_spambot('adjust', params['site'], reverse('worktime_main'))
+  if params[HONEY_NAME]:
+    return warn_and_redirect_spambot('adjust', params[HONEY_NAME], reverse('worktime_main'))
   if (not params['mode']
       or (params['add'] is None and params['subtract'] is None)
       or (params['add'] is not None and params['add'] < 0)
@@ -144,10 +147,10 @@ def switchera(request):
   params.add('era', type=int)  # This is the Era.id (primary key).
   params.add('new-era')        # This is a name for the new Era.
   params.add('debug', type=boolish)
-  params.add('site')
+  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params['site']:
-    return warn_and_redirect_spambot('switchera', params['site'], reverse('worktime_main'))
+  if params[HONEY_NAME]:
+    return warn_and_redirect_spambot('switchera', params[HONEY_NAME], reverse('worktime_main'))
   user = get_or_create_user(request)
   assert user is not None
   work_times = WorkTimesDatabase(user)
@@ -176,10 +179,10 @@ def renamera(request):
   params = QueryParams()
   params.add('name')
   params.add('debug', type=boolish)
-  params.add('site')
+  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params['site']:
-    return warn_and_redirect_spambot('renamera', params['site'], reverse('worktime_main'))
+  if params[HONEY_NAME]:
+    return warn_and_redirect_spambot('renamera', params[HONEY_NAME], reverse('worktime_main'))
   if params['debug']:
     query_str = '?debug=true'
   else:
@@ -211,10 +214,10 @@ def settings(request):
   params = QueryParams()
   for setting in User.SETTINGS:
     params.add(setting, choices=('on', 'off'))
-  params.add('site')
+  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params['site']:
-    return warn_and_redirect_spambot('settings', params['site'], reverse('worktime_main'))
+  if params[HONEY_NAME]:
+    return warn_and_redirect_spambot('settings', params[HONEY_NAME], reverse('worktime_main'))
   if params.invalid_value:
     log.warning('Invalid parameter.')
     return HttpResponseRedirect(reverse('worktime_main'))
@@ -237,9 +240,8 @@ def settings(request):
 
 ##### Helper functions #####
 
-def build_context(summary, modes, modes_meta, abbrev, debug):
+def build_context(summary, modes, modes_meta, abbrev):
   context = summary.copy()
-  context['debug'] = debug
   context['modes_list'] = make_mode_list(MODES, MODES_META, abbrev)
   context['totals'] = build_totals(summary, modes_meta)
   return context
@@ -316,10 +318,12 @@ def get_or_create_era(user, default_name):
     era.save()
   return era
 
-def warn_and_redirect_spambot(action, site, view_url=None):
-  site_trunc = truncate(site)
-  log.warning('Spambot blocked from worktime action {!r}. It entered "site" form value {!r}.'
-              .format(action, site_trunc))
+def warn_and_redirect_spambot(action, honey_value, view_url=None):
+  honey_trunc = truncate(honey_value)
+  log.warning(
+    f'Spambot blocked from worktime action {action!r}. It entered {HONEY_NAME!r} form value '
+    f'{honey_trunc!r}.'
+  )
   if view_url is not None:
     return HttpResponseRedirect(view_url)
 
