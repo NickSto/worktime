@@ -11,7 +11,8 @@ from .worktime import MODES, MODES_META, WorkTimesDatabase, timestring
 from utils.queryparams import QueryParams, boolish
 log = logging.getLogger(__name__)
 
-HONEY_NAME = settings.HONEYPOT_NAME
+#TODO: Integrate with current brunner system in main site.
+HONEY_NAME = 'website'
 HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
 DEFAULT_ERA_NAME = 'Project 1'
