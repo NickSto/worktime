@@ -11,8 +11,6 @@ from .worktime import MODES, MODES_META, WorkTimesDatabase, timestring
 from utils.queryparams import QueryParams, boolish
 log = logging.getLogger(__name__)
 
-#TODO: Integrate with current brunner system in main site.
-HONEY_NAME = 'website'
 HISTORY_BAR_TIMESPAN = 2*60*60
 COOKIE_NAME = 'visitors_v1'
 DEFAULT_ERA_NAME = 'Project 1'
@@ -66,7 +64,6 @@ def main(request):
   apply_colors(summary, COLORS)
   context = build_context(summary, MODES, MODES_META, abbrev)
   context['debug'] = params['debug']
-  context['HONEY_NAME'] = HONEY_NAME
   if params['format'] == 'html':
     return render(request, 'worktime/main.tmpl', context)
   elif params['format'] == 'json':
@@ -89,10 +86,7 @@ def switch(request):
   params = QueryParams()
   params.add('mode', choices=MODES)
   params.add('debug', type=boolish)
-  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params[HONEY_NAME]:
-    return warn_and_redirect_spambot('switch', params[HONEY_NAME], reverse('worktime_main'))
   if params.invalid_value:
     log.warning('Invalid parameter.')
     return HttpResponseRedirect(reverse('worktime_main'))
@@ -115,10 +109,7 @@ def adjust(request):
   params.add('add', type=int)
   params.add('subtract', type=int)
   params.add('debug', type=boolish)
-  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params[HONEY_NAME]:
-    return warn_and_redirect_spambot('adjust', params[HONEY_NAME], reverse('worktime_main'))
   if (not params['mode']
       or (params['add'] is None and params['subtract'] is None)
       or (params['add'] is not None and params['add'] < 0)
@@ -148,10 +139,7 @@ def switchera(request):
   params.add('era', type=int)  # This is the Era.id (primary key).
   params.add('new-era')        # This is a name for the new Era.
   params.add('debug', type=boolish)
-  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params[HONEY_NAME]:
-    return warn_and_redirect_spambot('switchera', params[HONEY_NAME], reverse('worktime_main'))
   user = get_or_create_user(request)
   assert user is not None
   work_times = WorkTimesDatabase(user)
@@ -180,10 +168,7 @@ def renamera(request):
   params = QueryParams()
   params.add('name')
   params.add('debug', type=boolish)
-  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params[HONEY_NAME]:
-    return warn_and_redirect_spambot('renamera', params[HONEY_NAME], reverse('worktime_main'))
   if params['debug']:
     query_str = '?debug=true'
   else:
@@ -215,10 +200,7 @@ def settings(request):
   params = QueryParams()
   for setting in User.SETTINGS:
     params.add(setting, choices=('on', 'off'))
-  params.add(HONEY_NAME)
   params.parse(request.POST)
-  if params[HONEY_NAME]:
-    return warn_and_redirect_spambot('settings', params[HONEY_NAME], reverse('worktime_main'))
   if params.invalid_value:
     log.warning('Invalid parameter.')
     return HttpResponseRedirect(reverse('worktime_main'))
@@ -318,15 +300,6 @@ def get_or_create_era(user, default_name):
     era.description = default_name
     era.save()
   return era
-
-def warn_and_redirect_spambot(action, honey_value, view_url=None):
-  honey_trunc = truncate(honey_value)
-  log.warning(
-    f'Spambot blocked from worktime action {action!r}. It entered {HONEY_NAME!r} form value '
-    f'{honey_trunc!r}.'
-  )
-  if view_url is not None:
-    return HttpResponseRedirect(view_url)
 
 def truncate(s, max_len=100):
   if s is not None and len(s) > max_len:

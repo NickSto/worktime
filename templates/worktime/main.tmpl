@@ -46,7 +46,6 @@
           <form id="era-rename" method="post" action="{% url 'worktime:renamera' %}">
             {% csrf_token %}
             <input id="era-rename-field" name="name" type="text" value="{% if era %}{{ era }}{% else %}Worktime{% endif %}">
-            <input class="ruhuman" name="{{ HONEY_NAME }}" type="text">
             <input id="era-rename-submit" type="submit" class="btn btn-default pull-right ajaxable" value="Rename">
             <div class="clearfix"></div>
           </form>
@@ -156,7 +155,6 @@
                   <p class="heading">
                     <strong>Switch</strong> mode to:
                   </p>
-                  <input class="ruhuman" name="{{ HONEY_NAME }}" type="text">
                   <input type="hidden" name="debug" value="{{ debug }}">
                   {% for mode in modes_list %}
                     {% if forloop.first %}
@@ -200,7 +198,6 @@
                       <input name="new-era" type="text">
                     </p>
                   </div>
-                  <input class="ruhuman" name="{{ HONEY_NAME }}" type="text">
                   <input type="hidden" name="debug" value="{{ debug }}">
                   <input class="btn btn-default ajaxable" type="submit" value="Submit">
                 </form>
@@ -226,7 +223,6 @@
                       </button>
                     {% endfor %}
                   </div>
-                  <input class="ruhuman" name="{{ HONEY_NAME }}" type="text">
                   <input type="hidden" name="debug" value="{{ debug }}">
                 </form>
               </section> <!-- #actions -->
@@ -234,7 +230,6 @@
                 <h4>Settings</h4>
                 <form name="settings" method="post" action="{% url 'worktime:settings' %}">
                   {% csrf_token %}
-                  <input class="ruhuman" name="{{ HONEY_NAME }}" type="text">
                   <p id="autoupdate" class="setting">
                     {% if settings.autoupdate %}
                       <button class="btn btn-default active" name="autoupdate" value="off" id="autoupdate-toggle">on</button>
