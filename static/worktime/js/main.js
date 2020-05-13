@@ -310,10 +310,12 @@ function updateEras(summary) {
     removeAllChildren(eraSelectElem);
     for (var i = 0; i < summary.eras.length; i++) {
       var era = summary.eras[i];
-      var optionElem = document.createElement("option");
-      optionElem.value = era.id;
-      optionElem.textContent = era.name;
-      eraSelectElem.appendChild(optionElem);
+      var buttonElem = document.createElement("button");
+      buttonElem.name = "era";
+      buttonElem.classList.add("btn", "btn-default", "ajaxable");
+      buttonElem.value = era.id;
+      buttonElem.textContent = era.name;
+      eraSelectElem.appendChild(buttonElem);
     }
   } else {
     chooseEraElem.style.display = "none";

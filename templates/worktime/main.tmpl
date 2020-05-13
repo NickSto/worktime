@@ -177,13 +177,11 @@
                     <p class="heading">
                       <strong>Change</strong> project to:
                     </p>
-                    <p>
-                      <select id="era-select" name="era">
-                        {% for era in eras %}
-                          <option value="{{ era.id }}">{{ era.name }}</option>
-                        {% endfor %}
-                      </select>
-                    </p>
+                    <div id="era-select" class="button-group">
+                      {% for era in eras %}
+                        <button class="btn btn-default ajaxable" name="era" value="{{ era.id }}">{{ era.name }}</button>
+                      {% endfor %}
+                    </div>
                   </div>
                   <div id="create-era">
                     <p id="create-era-prompt" class="heading">

@@ -268,6 +268,15 @@ td#ratio {
   min-width: 37px;
 }
 
+#era-select {
+  margin-top: 0;
+}
+
+#era-select [name="era"] {
+  display: block;
+  margin-bottom: 10px;
+}
+
 #adjust-mode .btn {
   margin-bottom: 10px;
   margin-right: 0;
