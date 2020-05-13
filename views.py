@@ -106,22 +106,19 @@ def switch(request):
 def adjust(request):
   params = QueryParams()
   params.add('mode', choices=MODES)
-  params.add('add', type=int)
-  params.add('subtract', type=int)
+  params.add('add', type=int, min=0, allow_empty=True)
+  params.add('subtract', type=int, min=0, allow_empty=True)
   params.add('debug', type=boolish)
   params.parse(request.POST)
-  if (not params['mode']
-      or (params['add'] is None and params['subtract'] is None)
-      or (params['add'] is not None and params['add'] < 0)
-      or (params['subtract'] is not None and params['subtract'] < 0)
-  ):
-    log.warning('Invalid mode ({mode!r}), add ({add!r}), or subtract ({subtract!r}).'.format(**params))
+  warning = validate_adjust_params(params)
+  if warning:
+    log.warning(warning)
     return HttpResponseRedirect(reverse('worktime_main'))
   if params['add'] is not None:
     delta = params['add']
   elif params['subtract'] is not None:
     delta = -params['subtract']
-  log.info('Adding {!r} to {!r}'.format(delta, params['mode']))
+  log.info(f'Adding {delta!r} to {params["mode"]!r}')
   user = get_or_create_user(request)
   assert user is not None
   work_times = WorkTimesDatabase(user)
@@ -222,6 +219,18 @@ def settings(request):
 
 
 ##### Helper functions #####
+
+def validate_adjust_params(params):
+  if not params['mode']:
+    return f'Invalid mode {params["mode"]!r}.'
+  elif params['add'] is None and params['subtract'] is None:
+    return 'Invalid arguments: No "add" or "subtract" value.'
+  elif params['add'] is not None and params['subtract'] is not None:
+    return 'Invalid arguments: Received both an "add" and "subtract" value.'
+  elif params.invalid_values:
+    return f'Invalid argument(s): Received {params.format_invalids()}'
+  else:
+    return None
 
 def build_context(summary, modes, modes_meta, abbrev):
   context = summary.copy()
