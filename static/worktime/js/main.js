@@ -855,7 +855,7 @@ function clearFields(fields) {
   // It will also remove the focus from those elements, as well as any <button>s.
   for (var i = 0; i < fields.length; i++) {
     var field = fields[i];
-    if (field.tagName === "INPUT" && field.type === "text") {
+    if (field.tagName === "INPUT" && (field.type === "text" || field.type === "number")) {
       field.value = "";
       field.blur();
     } else if (field.tagName === "BUTTON") {
